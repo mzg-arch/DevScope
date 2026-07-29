@@ -20,10 +20,15 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
+  useRouter,
+  useSelectedLayoutSegment,
+} from "next/navigation";
+import {
+  createContext,
   type FormEvent,
   type ReactNode,
+  useContext,
   useEffect,
   useState,
 } from "react";
@@ -46,15 +51,20 @@ type DashboardView =
 type RepositoryDashboardProps = {
   owner: string;
   repositoryName: string;
-  activeView?: DashboardView;
+  children: ReactNode;
 };
+
+const RepositoryDashboardContext =
+  createContext<Repository | null>(null);
 
 export function RepositoryDashboard({
   owner,
   repositoryName,
-  activeView = "overview",
+  children,
 }: RepositoryDashboardProps) {
   const router = useRouter();
+  const selectedSegment = useSelectedLayoutSegment();
+  const activeView = getDashboardView(selectedSegment);
 
   const [repository, setRepository] = useState<Repository | null>(
     null,
@@ -373,19 +383,49 @@ export function RepositoryDashboard({
         </header>
 
         <div className="max-w-[1180px] px-5 py-9 sm:px-7 lg:px-8">
-          {activeView === "files" ? (
-            <RepositoryFiles repository={repository} />
-          ) : activeView === "architecture" ? (
-            <RepositoryArchitecture repository={repository} />
-          ) : activeView === "ask" ? (
-            <RepositoryExplanation repository={repository} />
-          ) : (
-            <RepositoryOverview repository={repository} />
-          )}
+          <RepositoryDashboardContext.Provider value={repository}>
+            {children}
+          </RepositoryDashboardContext.Provider>
         </div>
       </main>
     </div>
   );
+}
+
+export function RepositoryOverviewView() {
+  const repository = useRepositoryDashboard();
+
+  return <RepositoryOverview repository={repository} />;
+}
+
+export function RepositoryFilesView() {
+  const repository = useRepositoryDashboard();
+
+  return <RepositoryFiles repository={repository} />;
+}
+
+export function RepositoryArchitectureView() {
+  const repository = useRepositoryDashboard();
+
+  return <RepositoryArchitecture repository={repository} />;
+}
+
+export function RepositoryExplanationView() {
+  const repository = useRepositoryDashboard();
+
+  return <RepositoryExplanation repository={repository} />;
+}
+
+function useRepositoryDashboard() {
+  const repository = useContext(RepositoryDashboardContext);
+
+  if (!repository) {
+    throw new Error(
+      "Repository views must be rendered inside RepositoryDashboard.",
+    );
+  }
+
+  return repository;
 }
 
 function RepositoryOverview({
@@ -649,6 +689,20 @@ function getNavigationClass(active: boolean) {
       ? "bg-white text-black"
       : "text-slate-300 hover:bg-white/10 hover:text-white"
   }`;
+}
+
+function getDashboardView(
+  selectedSegment: string | null,
+): DashboardView {
+  if (
+    selectedSegment === "files" ||
+    selectedSegment === "architecture" ||
+    selectedSegment === "ask"
+  ) {
+    return selectedSegment;
+  }
+
+  return "overview";
 }
 
 function formatDate(value: string) {
