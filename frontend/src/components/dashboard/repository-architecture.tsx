@@ -7,7 +7,8 @@ import {
   RefreshCw,
   TriangleAlert,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+
 import type { Repository } from "@/lib/repositories";
 import {
   detectRepositoryTechnologies,
@@ -80,24 +81,6 @@ export function RepositoryArchitecture({
       cancelled = true;
     };
   }, [cacheKey, reloadKey, repository.githubUrl]);
-
-  const groupedTechnologies = useMemo(() => {
-    if (!analysis) {
-      return [];
-    }
-
-    const groups = new Map<string, typeof analysis.technologies>();
-
-    for (const technology of analysis.technologies) {
-      const currentGroup = groups.get(technology.category) ?? [];
-      currentGroup.push(technology);
-      groups.set(technology.category, currentGroup);
-    }
-
-    return Array.from(groups.entries()).sort(([first], [second]) =>
-      first.localeCompare(second),
-    );
-  }, [analysis]);
 
   function retryAnalysis() {
     sessionStorage.removeItem(cacheKey);
@@ -181,7 +164,7 @@ export function RepositoryArchitecture({
           <button
             type="button"
             onClick={retryAnalysis}
-            className="inline-flex w-fit items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:border-slate-950 hover:bg-slate-950 hover:text-white"
+            className="inline-flex w-fit items-center gap-2 rounded-lg border border-slate-300 bg-transparent px-3 py-2 text-xs font-medium text-slate-700 hover:border-slate-950 hover:bg-slate-950 hover:text-white"
           >
             <RefreshCw className="h-3.5 w-3.5" />
             Reanalyze
@@ -225,121 +208,118 @@ export function RepositoryArchitecture({
         />
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[0.85fr_1.15fr]">
-        <div className="surface rounded-2xl border border-slate-200 p-5">
-          <div className="flex items-center gap-2">
-            <Code2 className="h-4 w-4 text-slate-700" />
+      <section className="surface rounded-2xl border border-slate-200 p-5">
+        <div className="flex items-center gap-2">
+          <Code2 className="h-4 w-4 text-slate-700" />
 
-            <h2 className="text-sm font-semibold text-slate-950">
-              Languages
-            </h2>
-          </div>
+          <h2 className="text-sm font-semibold text-slate-950">
+            Languages
+          </h2>
+        </div>
 
-          <div className="mt-5 space-y-5">
-            {analysis.languages.map((language) => (
-              <div key={language.name}>
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-900">
-                      {language.name}
-                    </p>
+        <div className="mt-5 grid gap-x-8 gap-y-5 md:grid-cols-2 xl:grid-cols-3">
+          {analysis.languages.map((language) => (
+            <div key={language.name} className="min-w-0">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold text-slate-900">
+                    {language.name}
+                  </p>
 
-                    <p className="mt-0.5 text-[11px] text-slate-500">
-                      {language.files}{" "}
-                      {language.files === 1 ? "file" : "files"}
-                    </p>
-                  </div>
-
-                  <p className="text-xs font-medium text-slate-600">
-                    {language.percentage}%
+                  <p className="mt-0.5 text-[11px] text-slate-500">
+                    {language.files}{" "}
+                    {language.files === 1 ? "file" : "files"}
                   </p>
                 </div>
 
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
-                  <div
-                    className="h-full rounded-full bg-slate-950"
-                    style={{
-                      width: `${Math.max(language.percentage, 2)}%`,
-                    }}
-                  />
-                </div>
-
-                <p className="mt-1.5 text-[10px] text-slate-400">
-                  {language.extensions.join(", ")}
+                <p className="text-xs font-medium text-slate-600">
+                  {language.percentage}%
                 </p>
               </div>
-            ))}
 
-            {analysis.languages.length === 0 && (
-              <p className="text-xs leading-5 text-slate-500">
-                No supported programming languages were detected.
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-300">
+                <div
+                  className="h-full rounded-full bg-slate-950"
+                  style={{
+                    width: `${Math.max(language.percentage, 2)}%`,
+                  }}
+                />
+              </div>
+
+              <p className="mt-1.5 truncate text-[10px] text-slate-400">
+                {language.extensions.join(", ")}
               </p>
-            )}
-          </div>
+            </div>
+          ))}
+
+          {analysis.languages.length === 0 && (
+            <p className="text-xs leading-5 text-slate-500">
+              No supported programming languages were detected.
+            </p>
+          )}
+        </div>
+      </section>
+
+      <section className="surface rounded-2xl border border-slate-200 p-5">
+        <div className="flex items-center gap-2">
+          <Layers3 className="h-4 w-4 text-slate-700" />
+
+          <h2 className="text-sm font-semibold text-slate-950">
+            Detected stack
+          </h2>
         </div>
 
-        <div className="surface rounded-2xl border border-slate-200 p-5">
-          <div className="flex items-center gap-2">
-            <Layers3 className="h-4 w-4 text-slate-700" />
+        <p className="mt-1 text-xs text-slate-500">
+          Frameworks and development tools detected from repository files.
+        </p>
 
-            <h2 className="text-sm font-semibold text-slate-950">
-              Detected stack
-            </h2>
-          </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {analysis.technologies.map((technology) => (
+            <article
+              key={`${technology.category}-${technology.name}`}
+              className="min-w-0 rounded-xl border border-slate-200 bg-slate-100/70 p-4 transition hover:border-slate-400 hover:bg-slate-200/70"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    {technology.category}
+                  </p>
 
-          <div className="mt-5 space-y-6">
-            {groupedTechnologies.map(([category, technologies]) => (
-              <div key={category}>
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                  {category}
-                </p>
-
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {technologies.map((technology) => (
-                    <article
-                      key={technology.name}
-                      className="rounded-xl border border-slate-200 bg-white p-3 transition hover:border-slate-400 hover:bg-slate-50"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <h3 className="text-xs font-semibold text-slate-950">
-                          {technology.name}
-                        </h3>
-
-                        <span
-                          className={
-                            technology.confidence === "high"
-                              ? "rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-medium text-emerald-700"
-                              : "rounded-full bg-amber-50 px-2 py-1 text-[10px] font-medium text-amber-700"
-                          }
-                        >
-                          {technology.confidence}
-                        </span>
-                      </div>
-
-                      <div className="mt-3 space-y-1">
-                        {technology.evidence.slice(0, 3).map((item) => (
-                          <p
-                            key={item}
-                            className="truncate font-mono text-[10px] text-slate-500"
-                            title={item}
-                          >
-                            {item}
-                          </p>
-                        ))}
-                      </div>
-                    </article>
-                  ))}
+                  <h3 className="mt-1 truncate text-xs font-semibold text-slate-950">
+                    {technology.name}
+                  </h3>
                 </div>
-              </div>
-            ))}
 
-            {analysis.technologies.length === 0 && (
-              <p className="text-xs leading-5 text-slate-500">
-                No supported frameworks or development tools were
-                detected.
-              </p>
-            )}
-          </div>
+                <span
+                  className={
+                    technology.confidence === "high"
+                      ? "shrink-0 rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-medium text-emerald-700"
+                      : "shrink-0 rounded-full bg-amber-100 px-2 py-1 text-[10px] font-medium text-amber-700"
+                  }
+                >
+                  {technology.confidence}
+                </span>
+              </div>
+
+              <div className="mt-4 space-y-1">
+                {technology.evidence.slice(0, 3).map((item) => (
+                  <p
+                    key={item}
+                    className="truncate font-mono text-[10px] text-slate-500"
+                    title={item}
+                  >
+                    {item}
+                  </p>
+                ))}
+              </div>
+            </article>
+          ))}
+
+          {analysis.technologies.length === 0 && (
+            <p className="text-xs leading-5 text-slate-500">
+              No supported frameworks or development tools were detected.
+            </p>
+          )}
         </div>
       </section>
     </div>
