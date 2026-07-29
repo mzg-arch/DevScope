@@ -47,37 +47,37 @@ export function RepositorySearch() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div className="mx-auto w-full max-w-2xl">
       <form onSubmit={handleSubmit}>
-        <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.06] p-2 shadow-2xl shadow-blue-950/30 backdrop-blur sm:flex-row">
-          <div className="flex flex-1 items-center gap-3 px-3">
-            <GitBranch className="size-5 shrink-0 text-zinc-500" />
+        <div className="surface flex flex-col gap-2 rounded-xl border border-slate-300 p-2 shadow-sm sm:flex-row">
+          <div className="flex flex-1 items-center gap-3 rounded-lg px-3 transition-colors focus-within:bg-blue-50/70">
+            <GitBranch className="size-4 shrink-0 text-slate-400" />
 
             <input
               type="url"
               value={url}
               onChange={(event) => setUrl(event.target.value)}
-              placeholder="https://github.com/facebook/react"
+              placeholder="Paste a public GitHub repository URL"
               required
               aria-label="GitHub repository URL"
-              className="h-12 w-full bg-transparent text-sm text-white outline-none placeholder:text-zinc-600"
+              className="h-11 w-full bg-transparent text-[13px] text-slate-800 outline-none placeholder:text-slate-400"
             />
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="flex h-12 items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-11 items-center justify-center gap-2 rounded-lg bg-slate-950 px-5 text-xs font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isLoading ? (
               <>
-                <LoaderCircle className="size-4 animate-spin" />
-                Opening dashboard
+                <LoaderCircle className="size-3.5 animate-spin" />
+                Opening
               </>
             ) : (
               <>
                 Analyze repository
-                <ArrowRight className="size-4" />
+                <ArrowRight className="size-3.5" />
               </>
             )}
           </button>
@@ -85,8 +85,8 @@ export function RepositorySearch() {
       </form>
 
       {error && (
-        <div className="mt-4 flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-          <AlertCircle className="size-4 shrink-0" />
+        <div className="mt-3 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50/90 px-3 py-2.5 text-xs text-red-700">
+          <AlertCircle className="size-3.5 shrink-0" />
           {error}
         </div>
       )}
