@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var RepositoryExplanationService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RepositoryExplanationService = void 0;
 const common_1 = require("@nestjs/common");
@@ -109,10 +110,11 @@ const EXPLANATION_SCHEMA = {
         "keyTakeaways",
     ],
 };
-let RepositoryExplanationService = class RepositoryExplanationService {
+let RepositoryExplanationService = RepositoryExplanationService_1 = class RepositoryExplanationService {
     configService;
     repositoriesService;
     technologyDetectorService;
+    logger = new common_1.Logger(RepositoryExplanationService_1.name);
     constructor(configService, repositoriesService, technologyDetectorService) {
         this.configService = configService;
         this.repositoriesService = repositoriesService;
@@ -210,13 +212,18 @@ ${JSON.stringify(promptContext, null, 2)}
                 model,
             };
         }
-        catch {
+        catch (error) {
+            const message = error instanceof Error
+                ? error.message
+                : JSON.stringify(error);
+            const stack = error instanceof Error ? error.stack : undefined;
+            this.logger.error(`Gemini explanation failed: ${message}`, stack);
             throw new common_1.ServiceUnavailableException("The AI explanation is temporarily unavailable. Please try again.");
         }
     }
 };
 exports.RepositoryExplanationService = RepositoryExplanationService;
-exports.RepositoryExplanationService = RepositoryExplanationService = __decorate([
+exports.RepositoryExplanationService = RepositoryExplanationService = RepositoryExplanationService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [config_1.ConfigService,
         repositories_service_1.RepositoriesService,

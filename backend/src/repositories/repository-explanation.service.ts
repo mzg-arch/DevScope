@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   ServiceUnavailableException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -131,6 +132,9 @@ const EXPLANATION_SCHEMA: Record<string, unknown> = {
 
 @Injectable()
 export class RepositoryExplanationService {
+    private readonly logger = new Logger(
+  RepositoryExplanationService.name,
+);
   constructor(
     private readonly configService: ConfigService,
     private readonly repositoriesService: RepositoriesService,
@@ -253,10 +257,23 @@ ${JSON.stringify(promptContext, null, 2)}
         generatedAt: new Date().toISOString(),
         model,
       };
-    } catch {
-      throw new ServiceUnavailableException(
-        "The AI explanation is temporarily unavailable. Please try again.",
-      );
-    }
+    } catch (error) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : JSON.stringify(error);
+
+  const stack =
+    error instanceof Error ? error.stack : undefined;
+
+  this.logger.error(
+    `Gemini explanation failed: ${message}`,
+    stack,
+  );
+
+  throw new ServiceUnavailableException(
+    "The AI explanation is temporarily unavailable. Please try again.",
+  );
+}
   }
 }

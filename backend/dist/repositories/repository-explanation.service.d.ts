@@ -26,6 +26,7 @@ export declare class RepositoryExplanationService {
     private readonly configService;
     private readonly repositoriesService;
     private readonly technologyDetectorService;
+    private readonly logger;
     constructor(configService: ConfigService, repositoriesService: RepositoriesService, technologyDetectorService: TechnologyDetectorService);
     explainRepository(url: string): Promise<{
         repository: {

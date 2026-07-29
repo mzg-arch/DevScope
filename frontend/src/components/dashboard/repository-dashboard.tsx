@@ -30,13 +30,18 @@ import {
 
 import { DevScopeMark } from "@/components/devscope-mark";
 import { RepositoryArchitecture } from "@/components/dashboard/repository-architecture";
+import { RepositoryExplanation } from "@/components/dashboard/repository-explanation";
 import { RepositoryFiles } from "@/components/dashboard/repository-files";
 import {
   inspectRepository,
   type Repository,
 } from "@/lib/repositories";
 
-type DashboardView = "overview" | "files" | "architecture";
+type DashboardView =
+  | "overview"
+  | "files"
+  | "architecture"
+  | "ask";
 
 type RepositoryDashboardProps = {
   owner: string;
@@ -51,7 +56,9 @@ export function RepositoryDashboard({
 }: RepositoryDashboardProps) {
   const router = useRouter();
 
-  const [repository, setRepository] = useState<Repository | null>(null);
+  const [repository, setRepository] = useState<Repository | null>(
+    null,
+  );
   const [repositoryInput, setRepositoryInput] = useState("");
   const [searchError, setSearchError] = useState("");
   const [loadError, setLoadError] = useState("");
@@ -98,7 +105,9 @@ export function RepositoryDashboard({
     };
   }, [owner, repositoryName]);
 
-  function handleRepositorySearch(event: FormEvent<HTMLFormElement>) {
+  function handleRepositorySearch(
+    event: FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault();
     setSearchError("");
 
@@ -109,7 +118,9 @@ export function RepositoryDashboard({
     );
 
     if (!match) {
-      setSearchError("Enter a valid public GitHub repository URL.");
+      setSearchError(
+        "Enter a valid public GitHub repository URL.",
+      );
       return;
     }
 
@@ -208,7 +219,9 @@ export function RepositoryDashboard({
 
           <Link
             href={dashboardBasePath}
-            className={getNavigationClass(activeView === "overview")}
+            className={getNavigationClass(
+              activeView === "overview",
+            )}
           >
             <LayoutDashboard className="h-4 w-4" />
             Overview
@@ -216,7 +229,9 @@ export function RepositoryDashboard({
 
           <Link
             href={`${dashboardBasePath}/files`}
-            className={getNavigationClass(activeView === "files")}
+            className={getNavigationClass(
+              activeView === "files",
+            )}
           >
             <FolderTree className="h-4 w-4" />
             Files
@@ -232,16 +247,13 @@ export function RepositoryDashboard({
             Architecture
           </Link>
 
-          <div className="flex cursor-not-allowed items-center justify-between rounded-lg px-3 py-2.5 text-sm text-slate-500">
-            <span className="flex items-center gap-3">
-              <Bot className="h-4 w-4" />
-              Ask DevScope
-            </span>
-
-            <span className="rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-400">
-              Soon
-            </span>
-          </div>
+          <Link
+            href={`${dashboardBasePath}/ask`}
+            className={getNavigationClass(activeView === "ask")}
+          >
+            <Bot className="h-4 w-4" />
+            Ask DevScope
+          </Link>
 
           <div className="flex cursor-not-allowed items-center justify-between rounded-lg px-3 py-2.5 text-sm text-slate-500">
             <span className="flex items-center gap-3">
@@ -290,7 +302,9 @@ export function RepositoryDashboard({
                 </div>
 
                 <p className="mt-0.5 text-xs capitalize text-slate-500">
-                  {activeView}
+                  {activeView === "ask"
+                    ? "Ask DevScope"
+                    : activeView}
                 </p>
               </div>
             </div>
@@ -348,6 +362,13 @@ export function RepositoryDashboard({
             >
               Architecture
             </MobileNavigationLink>
+
+            <MobileNavigationLink
+              href={`${dashboardBasePath}/ask`}
+              active={activeView === "ask"}
+            >
+              Ask DevScope
+            </MobileNavigationLink>
           </nav>
         </header>
 
@@ -356,6 +377,8 @@ export function RepositoryDashboard({
             <RepositoryFiles repository={repository} />
           ) : activeView === "architecture" ? (
             <RepositoryArchitecture repository={repository} />
+          ) : activeView === "ask" ? (
+            <RepositoryExplanation repository={repository} />
           ) : (
             <RepositoryOverview repository={repository} />
           )}
@@ -524,13 +547,23 @@ function RepositoryOverview({
 
           <div>
             <h3 className="text-sm font-semibold text-slate-950">
-              AI repository explanation is coming next
+              AI repository explanation
             </h3>
 
             <p className="mt-1 text-xs leading-5 text-slate-500">
-              DevScope will turn the detected architecture into a simple
-              explanation of how the repository works.
+              Use Ask DevScope to understand what this repository does,
+              how it works and where you should start.
             </p>
+
+            <Link
+              href={`/dashboard/${encodeURIComponent(
+                repository.owner.username,
+              )}/${encodeURIComponent(repository.name)}/ask`}
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-slate-950 px-3 py-2 text-xs font-medium text-white hover:bg-blue-600"
+            >
+              <Bot className="h-3.5 w-3.5" />
+              Open AI guide
+            </Link>
           </div>
         </div>
       </section>
