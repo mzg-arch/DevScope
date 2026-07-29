@@ -1,8 +1,10 @@
 import { InspectRepositoryDto } from "./dto/inspect-repository.dto";
 import { RepositoriesService } from "./repositories.service";
+import { TechnologyDetectorService } from "./technology-detector.service";
 export declare class RepositoriesController {
     private readonly repositoriesService;
-    constructor(repositoriesService: RepositoriesService);
+    private readonly technologyDetectorService;
+    constructor(repositoriesService: RepositoriesService, technologyDetectorService: TechnologyDetectorService);
     inspectRepository(dto: InspectRepositoryDto): Promise<{
         id: number;
         name: string;
@@ -58,5 +60,35 @@ export declare class RepositoriesController {
             size: number | null;
             extension: string | null;
         }[];
+    }>;
+    detectTechnologies(dto: InspectRepositoryDto): Promise<{
+        repository: {
+            name: string;
+            fullName: string;
+            branch: string;
+            githubUrl: string;
+        };
+        summary: {
+            analyzedItems: number;
+            detectedLanguages: number;
+            detectedTechnologies: number;
+        };
+        languages: {
+            percentage: number;
+            name: string;
+            files: number;
+            extensions: string[];
+        }[];
+        technologies: {
+            name: string;
+            category: string;
+            confidence: "high" | "medium";
+            evidence: string[];
+        }[];
+        limits: {
+            truncatedByGitHub: boolean;
+            limitedByDevScope: boolean;
+            maximumReturnedItems: number;
+        };
     }>;
 }

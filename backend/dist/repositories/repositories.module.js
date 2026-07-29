@@ -10,13 +10,17 @@ exports.RepositoriesModule = void 0;
 const common_1 = require("@nestjs/common");
 const repositories_controller_1 = require("./repositories.controller");
 const repositories_service_1 = require("./repositories.service");
+const technology_detector_service_1 = require("./technology-detector.service");
 let RepositoriesModule = class RepositoriesModule {
 };
 exports.RepositoriesModule = RepositoriesModule;
 exports.RepositoriesModule = RepositoriesModule = __decorate([
     (0, common_1.Module)({
         controllers: [repositories_controller_1.RepositoriesController],
-        providers: [repositories_service_1.RepositoriesService]
+        providers: [
+            repositories_service_1.RepositoriesService,
+            technology_detector_service_1.TechnologyDetectorService,
+        ],
     })
 ], RepositoriesModule);
 //# sourceMappingURL=repositories.module.js.map

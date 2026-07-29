@@ -16,16 +16,22 @@ exports.RepositoriesController = void 0;
 const common_1 = require("@nestjs/common");
 const inspect_repository_dto_1 = require("./dto/inspect-repository.dto");
 const repositories_service_1 = require("./repositories.service");
+const technology_detector_service_1 = require("./technology-detector.service");
 let RepositoriesController = class RepositoriesController {
     repositoriesService;
-    constructor(repositoriesService) {
+    technologyDetectorService;
+    constructor(repositoriesService, technologyDetectorService) {
         this.repositoriesService = repositoriesService;
+        this.technologyDetectorService = technologyDetectorService;
     }
     inspectRepository(dto) {
         return this.repositoriesService.inspectRepository(dto.url);
     }
     getRepositoryTree(dto) {
         return this.repositoriesService.getRepositoryTree(dto.url);
+    }
+    detectTechnologies(dto) {
+        return this.technologyDetectorService.detectTechnologies(dto.url);
     }
 };
 exports.RepositoriesController = RepositoriesController;
@@ -45,8 +51,17 @@ __decorate([
     __metadata("design:paramtypes", [inspect_repository_dto_1.InspectRepositoryDto]),
     __metadata("design:returntype", void 0)
 ], RepositoriesController.prototype, "getRepositoryTree", null);
+__decorate([
+    (0, common_1.Post)("technologies"),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [inspect_repository_dto_1.InspectRepositoryDto]),
+    __metadata("design:returntype", void 0)
+], RepositoriesController.prototype, "detectTechnologies", null);
 exports.RepositoriesController = RepositoriesController = __decorate([
     (0, common_1.Controller)("repositories"),
-    __metadata("design:paramtypes", [repositories_service_1.RepositoriesService])
+    __metadata("design:paramtypes", [repositories_service_1.RepositoriesService,
+        technology_detector_service_1.TechnologyDetectorService])
 ], RepositoriesController);
 //# sourceMappingURL=repositories.controller.js.map

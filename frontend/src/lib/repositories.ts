@@ -1,6 +1,8 @@
 import type { Repository } from "@/types/repository";
 import type { RepositoryTreeResponse } from "@/types/repository-tree";
 
+export type { Repository };
+
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 
@@ -23,7 +25,9 @@ async function postRepositoryRequest<T>(
       ? data.message[0]
       : data.message;
 
-    throw new Error(message ?? "Unable to retrieve this repository.");
+    throw new Error(
+      message ?? "Unable to retrieve this repository.",
+    );
   }
 
   return data as T;

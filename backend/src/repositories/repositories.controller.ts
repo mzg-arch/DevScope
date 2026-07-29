@@ -8,11 +8,13 @@ import {
 
 import { InspectRepositoryDto } from "./dto/inspect-repository.dto";
 import { RepositoriesService } from "./repositories.service";
+import { TechnologyDetectorService } from "./technology-detector.service";
 
 @Controller("repositories")
 export class RepositoriesController {
   constructor(
     private readonly repositoriesService: RepositoriesService,
+    private readonly technologyDetectorService: TechnologyDetectorService,
   ) {}
 
   @Post("inspect")
@@ -25,5 +27,13 @@ export class RepositoriesController {
   @HttpCode(HttpStatus.OK)
   getRepositoryTree(@Body() dto: InspectRepositoryDto) {
     return this.repositoriesService.getRepositoryTree(dto.url);
+  }
+
+  @Post("technologies")
+  @HttpCode(HttpStatus.OK)
+  detectTechnologies(@Body() dto: InspectRepositoryDto) {
+    return this.technologyDetectorService.detectTechnologies(
+      dto.url,
+    );
   }
 }

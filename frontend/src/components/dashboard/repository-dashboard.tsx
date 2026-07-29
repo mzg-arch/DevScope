@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
 import {
   ArrowLeft,
   Bot,
@@ -12,20 +10,33 @@ import {
   GitBranch,
   GitFork,
   GitPullRequest,
+  Layers3,
   LayoutDashboard,
   LoaderCircle,
   Plus,
   Scale,
   Search,
   Star,
+  TriangleAlert,
 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  type FormEvent,
+  type ReactNode,
+  useEffect,
+  useState,
+} from "react";
 
 import { DevScopeMark } from "@/components/devscope-mark";
+import { RepositoryArchitecture } from "@/components/dashboard/repository-architecture";
 import { RepositoryFiles } from "@/components/dashboard/repository-files";
-import { inspectRepository } from "@/lib/repositories";
-import type { Repository } from "@/types/repository";
+import {
+  inspectRepository,
+  type Repository,
+} from "@/lib/repositories";
 
-type DashboardView = "overview" | "files";
+type DashboardView = "overview" | "files" | "architecture";
 
 type RepositoryDashboardProps = {
   owner: string;
@@ -33,125 +44,48 @@ type RepositoryDashboardProps = {
   activeView?: DashboardView;
 };
 
-const navigation = [
-  {
-    name: "Overview",
-    icon: LayoutDashboard,
-    available: true,
-    view: "overview",
-    path: "",
-  },
-  {
-    name: "Architecture",
-    icon: GitBranch,
-    available: false,
-    view: null,
-    path: null,
-  },
-  {
-    name: "Files",
-    icon: FolderTree,
-    available: true,
-    view: "files",
-    path: "files",
-  },
-  {
-    name: "Ask DevScope",
-    icon: Bot,
-    available: false,
-    view: null,
-    path: null,
-  },
-  {
-    name: "Issues",
-    icon: GitPullRequest,
-    available: false,
-    view: null,
-    path: null,
-  },
-];
-
-function formatNumber(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    notation: value >= 10_000 ? "compact" : "standard",
-    maximumFractionDigits: 1,
-  }).format(value);
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
 export function RepositoryDashboard({
   owner,
   repositoryName,
   activeView = "overview",
 }: RepositoryDashboardProps) {
+  const router = useRouter();
+
   const [repository, setRepository] = useState<Repository | null>(null);
-  const [error, setError] = useState("");
+  const [repositoryInput, setRepositoryInput] = useState("");
+  const [searchError, setSearchError] = useState("");
+  const [loadError, setLoadError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
+  const dashboardBasePath = `/dashboard/${encodeURIComponent(
+    owner,
+  )}/${encodeURIComponent(repositoryName)}`;
+
   useEffect(() => {
-    let ignore = false;
+    let cancelled = false;
 
     async function loadRepository() {
+      setIsLoading(true);
+      setLoadError("");
+
       try {
-        const expectedName =
-          `${owner}/${repositoryName}`.toLowerCase();
-
-        const cachedValue = sessionStorage.getItem(
-          "devscope:last-repository",
-        );
-
-        if (cachedValue) {
-          try {
-            const cachedRepository = JSON.parse(
-              cachedValue,
-            ) as Repository;
-
-            if (
-              cachedRepository.fullName.toLowerCase() ===
-              expectedName
-            ) {
-              if (!ignore) {
-                setRepository(cachedRepository);
-              }
-
-              return;
-            }
-          } catch {
-            sessionStorage.removeItem(
-              "devscope:last-repository",
-            );
-          }
-        }
-
         const result = await inspectRepository(
           `https://github.com/${owner}/${repositoryName}`,
         );
 
-        sessionStorage.setItem(
-          "devscope:last-repository",
-          JSON.stringify(result),
-        );
-
-        if (!ignore) {
+        if (!cancelled) {
           setRepository(result);
         }
-      } catch (error) {
-        if (!ignore) {
-          setError(
-            error instanceof Error
-              ? error.message
-              : "Unable to load this repository.",
+      } catch (caughtError) {
+        if (!cancelled) {
+          setLoadError(
+            caughtError instanceof Error
+              ? caughtError.message
+              : "Could not load this repository.",
           );
         }
       } finally {
-        if (!ignore) {
+        if (!cancelled) {
           setIsLoading(false);
         }
       }
@@ -160,447 +94,534 @@ export function RepositoryDashboard({
     loadRepository();
 
     return () => {
-      ignore = true;
+      cancelled = true;
     };
   }, [owner, repositoryName]);
 
+  function handleRepositorySearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSearchError("");
+
+    const cleanedInput = repositoryInput.trim().replace(/\/+$/, "");
+
+    const match = cleanedInput.match(
+      /^(?:https?:\/\/)?(?:www\.)?github\.com\/([^/]+)\/([^/?#]+)$/i,
+    );
+
+    if (!match) {
+      setSearchError("Enter a valid public GitHub repository URL.");
+      return;
+    }
+
+    const nextOwner = match[1];
+    const nextRepository = match[2].replace(/\.git$/i, "");
+
+    router.push(
+      `/dashboard/${encodeURIComponent(
+        nextOwner,
+      )}/${encodeURIComponent(nextRepository)}`,
+    );
+
+    setRepositoryInput("");
+  }
+
   if (isLoading) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <div className="surface rounded-xl border border-slate-300 px-7 py-6 text-center">
-          <LoaderCircle className="mx-auto size-5 animate-spin text-blue-600" />
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="surface rounded-2xl border border-slate-200 px-8 py-7 text-center">
+          <LoaderCircle className="mx-auto h-5 w-5 animate-spin text-slate-700" />
 
-          <p className="mt-3 text-[13px] text-slate-500">
-            Loading repository...
+          <p className="mt-3 text-sm font-semibold text-slate-950">
+            Loading repository
+          </p>
+
+          <p className="mt-1 text-xs text-slate-500">
+            Getting the latest repository details.
           </p>
         </div>
-      </main>
+      </div>
     );
   }
 
-  if (error || !repository) {
+  if (loadError || !repository) {
     return (
-      <main className="flex min-h-screen items-center justify-center px-5">
-        <div className="surface max-w-sm rounded-xl border border-slate-300 p-6 text-center">
-          <h1 className="text-base font-semibold">
-            Repository unavailable
+      <div className="flex min-h-screen items-center justify-center px-5">
+        <div className="surface w-full max-w-md rounded-2xl border border-red-200 p-6">
+          <TriangleAlert className="h-5 w-5 text-red-500" />
+
+          <h1 className="mt-4 text-lg font-semibold text-slate-950">
+            Repository could not be loaded
           </h1>
 
-          <p className="mt-2 text-[13px] leading-5 text-slate-500">
-            {error || "DevScope could not load this repository."}
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            {loadError}
           </p>
 
           <Link
             href="/"
-            className="mt-5 inline-flex items-center gap-2 rounded-lg bg-slate-950 px-3 py-2 text-[13px] font-medium text-white hover:bg-blue-600"
+            className="mt-5 inline-flex items-center gap-2 rounded-lg bg-slate-950 px-4 py-2.5 text-xs font-medium text-white hover:bg-blue-600"
           >
-            <ArrowLeft className="size-3.5" />
+            <ArrowLeft className="h-3.5 w-3.5" />
             Return home
           </Link>
         </div>
-      </main>
+      </div>
     );
   }
 
-  const statistics = [
-    {
-      label: "Stars",
-      value: formatNumber(repository.stars),
-      icon: Star,
-    },
-    {
-      label: "Forks",
-      value: formatNumber(repository.forks),
-      icon: GitFork,
-    },
-    {
-      label: "Open issues",
-      value: formatNumber(repository.openIssues),
-      icon: GitPullRequest,
-    },
-    {
-      label: "Main branch",
-      value: repository.defaultBranch,
-      icon: GitBranch,
-    },
-  ];
-
-  const details = [
-    {
-      label: "Primary language",
-      value: repository.language ?? "Not detected",
-      icon: FileCode2,
-    },
-    {
-      label: "License",
-      value: repository.license?.name ?? "Not specified",
-      icon: Scale,
-    },
-    {
-      label: "Last push",
-      value: formatDate(repository.pushedAt),
-      icon: Clock3,
-    },
-    {
-      label: "Updated",
-      value: formatDate(repository.updatedAt),
-      icon: Clock3,
-    },
-  ];
-
-  const dashboardBasePath =
-    `/dashboard/${encodeURIComponent(owner)}/${encodeURIComponent(repositoryName)}`;
-
   return (
     <div className="min-h-screen">
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-[260px] flex-col border-r border-white/10 bg-slate-950 text-white lg:flex">
-        <div className="flex h-16 items-center px-4">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[260px] flex-col bg-black text-white lg:flex">
+        <div className="border-b border-white/10 px-5 py-5">
           <Link
             href="/"
-            className="-ml-2 flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-white hover:bg-white/10"
+            className="inline-flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-white/10"
           >
-            <DevScopeMark className="text-white" />
-            <span>DevScope</span>
+            <DevScopeMark className="h-7 w-7 text-white" />
+
+            <span className="text-lg font-semibold tracking-tight">
+              DevScope
+            </span>
           </Link>
         </div>
 
-        <div className="px-3">
-          <Link
-            href="/"
-            className="flex h-10 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 text-[13px] font-medium text-white hover:border-white/25 hover:bg-white/10"
-          >
-            <Plus className="size-4" />
-            New repository
-          </Link>
-        </div>
-
-        <div className="px-3 pb-3 pt-4">
-          <div className="flex h-10 items-center gap-2 rounded-lg border border-transparent px-2.5 transition-colors focus-within:border-white/15 focus-within:bg-white/5">
-            <Search className="size-4 text-slate-500" />
-
-            <input
-              type="text"
-              placeholder="Search sections"
-              className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-slate-500"
-            />
-          </div>
-        </div>
-
-        <nav className="space-y-1 px-2">
-          <p className="px-2 pb-1.5 text-[11px] font-medium uppercase tracking-wider text-slate-500">
-            Workspace
-          </p>
-
-          {navigation.map((item) => {
-            const Icon = item.icon;
-            const isActive = item.view === activeView;
-
-            if (
-              item.available &&
-              item.path !== null &&
-              item.view !== null
-            ) {
-              const href = item.path
-                ? `${dashboardBasePath}/${item.path}`
-                : dashboardBasePath;
-
-              return (
-                <Link
-                  key={item.name}
-                  href={href}
-                  className={`flex h-10 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-[13px] ${
-                    isActive
-                      ? "bg-white/10 font-medium text-white hover:bg-white/15"
-                      : "text-slate-300 hover:bg-white/10 hover:text-white"
-                  }`}
-                >
-                  <Icon className="size-4" />
-                  <span>{item.name}</span>
-                </Link>
-              );
-            }
-
-            return (
-              <button
-                key={item.name}
-                type="button"
-                disabled
-                className="flex h-10 w-full cursor-not-allowed items-center gap-2.5 rounded-lg px-2.5 text-left text-[13px] text-slate-600"
-              >
-                <Icon className="size-4" />
-                <span>{item.name}</span>
-
-                <span className="ml-auto text-[10px] text-slate-600">
-                  Soon
-                </span>
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="mt-6 px-2">
-          <p className="px-2 pb-1.5 text-[11px] font-medium uppercase tracking-wider text-slate-500">
+        <div className="border-b border-white/10 px-5 py-5">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
             Current repository
           </p>
 
-          <a
-            href={repository.githubUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="block rounded-lg px-2.5 py-3 hover:bg-white/10"
-          >
-            <p className="truncate text-[11px] text-slate-500">
-              {repository.owner.username}
-            </p>
-
-            <p className="mt-1 truncate text-[13px] font-medium text-white">
+          <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+            <p className="truncate text-sm font-semibold text-white">
               {repository.name}
             </p>
-          </a>
+
+            <p className="mt-1 truncate text-xs text-slate-400">
+              {repository.fullName}
+            </p>
+          </div>
         </div>
 
-        <div className="mt-auto border-t border-white/10 p-3">
-          <a
-            href="https://micahelbiru.dev"
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-2.5 rounded-lg px-2 py-2.5 hover:bg-white/10"
+        <nav className="flex-1 space-y-1 px-4 py-5">
+          <p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+            Analysis
+          </p>
+
+          <Link
+            href={dashboardBasePath}
+            className={getNavigationClass(activeView === "overview")}
           >
-            <span className="flex size-8 items-center justify-center rounded-full bg-white text-[11px] font-semibold text-slate-950">
-              MB
+            <LayoutDashboard className="h-4 w-4" />
+            Overview
+          </Link>
+
+          <Link
+            href={`${dashboardBasePath}/files`}
+            className={getNavigationClass(activeView === "files")}
+          >
+            <FolderTree className="h-4 w-4" />
+            Files
+          </Link>
+
+          <Link
+            href={`${dashboardBasePath}/architecture`}
+            className={getNavigationClass(
+              activeView === "architecture",
+            )}
+          >
+            <Layers3 className="h-4 w-4" />
+            Architecture
+          </Link>
+
+          <div className="flex cursor-not-allowed items-center justify-between rounded-lg px-3 py-2.5 text-sm text-slate-500">
+            <span className="flex items-center gap-3">
+              <Bot className="h-4 w-4" />
+              Ask DevScope
             </span>
 
-            <div className="min-w-0">
-              <p className="truncate text-[13px] font-medium text-white">
-                Micahel Biru
-              </p>
+            <span className="rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-400">
+              Soon
+            </span>
+          </div>
 
-              <p className="truncate text-[11px] text-slate-500">
-                Developer
-              </p>
-            </div>
-          </a>
+          <div className="flex cursor-not-allowed items-center justify-between rounded-lg px-3 py-2.5 text-sm text-slate-500">
+            <span className="flex items-center gap-3">
+              <GitPullRequest className="h-4 w-4" />
+              Issues
+            </span>
+
+            <span className="rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-400">
+              Soon
+            </span>
+          </div>
+        </nav>
+
+        <div className="border-t border-white/10 p-4">
+          <Link
+            href="/"
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+          >
+            <Plus className="h-4 w-4" />
+            Analyze another repo
+          </Link>
         </div>
       </aside>
 
-      <div className="lg:pl-[260px]">
-        <header className="gray-surface sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-300/80 px-4 sm:px-6">
-          <div className="flex items-center gap-2">
-            <Link
-              href="/"
-              className="rounded-lg p-1 hover:bg-white/80 lg:hidden"
-              aria-label="Return to homepage"
-            >
-              <DevScopeMark />
-            </Link>
+      <main className="min-h-screen lg:pl-[260px]">
+        <header className="border-b border-slate-200 bg-white/90 px-5 py-4 backdrop-blur sm:px-7 lg:px-8">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <Link
+                href="/"
+                className="rounded-lg p-2 text-slate-600 hover:bg-slate-950 hover:text-white lg:hidden"
+                aria-label="Return home"
+              >
+                <DevScopeMark className="h-6 w-6" />
+              </Link>
 
-            <div className="text-[13px]">
-              <span className="text-slate-500">
-                {repository.owner.username}
-              </span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h1 className="truncate text-lg font-semibold tracking-tight text-slate-950">
+                    {repository.fullName}
+                  </h1>
 
-              <span className="mx-1.5 text-slate-400">/</span>
+                  <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[10px] font-medium capitalize text-slate-600">
+                    {repository.visibility}
+                  </span>
+                </div>
 
-              <span className="font-medium">
-                {repository.name}
-              </span>
+                <p className="mt-0.5 text-xs capitalize text-slate-500">
+                  {activeView}
+                </p>
+              </div>
             </div>
+
+            <form
+              onSubmit={handleRepositorySearch}
+              className="flex w-full max-w-xl items-center rounded-xl border border-slate-300 bg-white p-1.5 focus-within:border-slate-500"
+            >
+              <Search className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
+
+              <input
+                type="text"
+                value={repositoryInput}
+                onChange={(event) => {
+                  setRepositoryInput(event.target.value);
+                  setSearchError("");
+                }}
+                placeholder="Paste another public GitHub repository URL"
+                className="min-w-0 flex-1 bg-transparent px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none"
+              />
+
+              <button
+                type="submit"
+                className="shrink-0 rounded-lg bg-slate-950 px-4 py-2 text-xs font-medium text-white hover:bg-blue-600"
+              >
+                Analyze
+              </button>
+            </form>
+          </div>
+
+          {searchError && (
+            <p className="mt-2 text-right text-xs text-red-600">
+              {searchError}
+            </p>
+          )}
+
+          <nav className="mt-4 flex gap-1 overflow-x-auto lg:hidden">
+            <MobileNavigationLink
+              href={dashboardBasePath}
+              active={activeView === "overview"}
+            >
+              Overview
+            </MobileNavigationLink>
+
+            <MobileNavigationLink
+              href={`${dashboardBasePath}/files`}
+              active={activeView === "files"}
+            >
+              Files
+            </MobileNavigationLink>
+
+            <MobileNavigationLink
+              href={`${dashboardBasePath}/architecture`}
+              active={activeView === "architecture"}
+            >
+              Architecture
+            </MobileNavigationLink>
+          </nav>
+        </header>
+
+        <div className="max-w-[1180px] px-5 py-9 sm:px-7 lg:px-8">
+          {activeView === "files" ? (
+            <RepositoryFiles repository={repository} />
+          ) : activeView === "architecture" ? (
+            <RepositoryArchitecture repository={repository} />
+          ) : (
+            <RepositoryOverview repository={repository} />
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function RepositoryOverview({
+  repository,
+}: {
+  repository: Repository;
+}) {
+  return (
+    <div className="space-y-5">
+      <section className="surface rounded-2xl border border-slate-200 p-5 sm:p-6">
+        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+                Repository overview
+              </p>
+
+              {repository.archived && (
+                <span className="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-medium text-amber-700">
+                  Archived
+                </span>
+              )}
+            </div>
+
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
+              {repository.fullName}
+            </h2>
+
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+              {repository.description ||
+                "This repository does not have a description."}
+            </p>
           </div>
 
           <a
             href={repository.githubUrl}
             target="_blank"
             rel="noreferrer"
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white/70 px-3 text-[13px] font-medium text-slate-700 hover:border-slate-400 hover:bg-white"
+            className="inline-flex w-fit shrink-0 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:border-slate-950 hover:bg-slate-950 hover:text-white"
           >
-            GitHub
-            <ExternalLink className="size-3.5" />
+            View on GitHub
+            <ExternalLink className="h-3.5 w-3.5" />
           </a>
-        </header>
+        </div>
 
-        <main className="max-w-[1180px] px-5 py-9 sm:px-7 lg:px-8">
-          {activeView === "files" ? (
-            <RepositoryFiles repository={repository} />
-          ) : (
-            <>
-              <section>
-                <p className="text-xs font-medium uppercase tracking-wider text-blue-600">
-                  Repository overview
-                </p>
+        <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 border-t border-slate-200 pt-5">
+          <RepositoryStat
+            icon={<Star className="h-4 w-4" />}
+            value={repository.stars}
+            label="Stars"
+          />
 
-                <div className="mt-2 flex flex-col justify-between gap-4 md:flex-row md:items-start">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h1 className="text-[26px] font-semibold tracking-tight text-slate-950">
-                        {repository.name}
-                      </h1>
+          <RepositoryStat
+            icon={<GitFork className="h-4 w-4" />}
+            value={repository.forks}
+            label="Forks"
+          />
 
-                      <span className="rounded-full border border-slate-300 bg-white/70 px-2 py-0.5 text-xs capitalize text-slate-600">
-                        {repository.visibility}
-                      </span>
+          <RepositoryStat
+            icon={<GitPullRequest className="h-4 w-4" />}
+            value={repository.openIssues}
+            label="Open issues"
+          />
+        </div>
+      </section>
 
-                      {repository.archived && (
-                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
-                          Archived
-                        </span>
-                      )}
-                    </div>
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <InformationCard
+          icon={<GitBranch className="h-4 w-4" />}
+          label="Default branch"
+          value={repository.defaultBranch}
+        />
 
-                    <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                      {repository.description ??
-                        "This repository does not provide a description."}
-                    </p>
-                  </div>
+        <InformationCard
+          icon={<FileCode2 className="h-4 w-4" />}
+          label="Primary language"
+          value={repository.language || "Not detected"}
+        />
 
-                  {repository.language && (
-                    <span className="w-fit rounded-md bg-blue-50/90 px-2.5 py-1.5 text-[13px] font-medium text-blue-700">
-                      {repository.language}
-                    </span>
-                  )}
-                </div>
-              </section>
+        <InformationCard
+          icon={<Scale className="h-4 w-4" />}
+          label="License"
+          value={repository.license?.name || "No license"}
+        />
 
-              <section className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {statistics.map((statistic) => {
-                  const Icon = statistic.icon;
+        <InformationCard
+          icon={<Clock3 className="h-4 w-4" />}
+          label="Last pushed"
+          value={formatDate(repository.pushedAt)}
+        />
+      </section>
 
-                  return (
-                    <article
-                      key={statistic.label}
-                      className="surface rounded-xl border border-slate-300/80 p-4"
-                    >
-                      <div className="flex items-center gap-2 text-[13px] text-slate-500">
-                        <Icon className="size-3.5" />
-                        {statistic.label}
-                      </div>
+      <section className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+        <article className="surface rounded-2xl border border-slate-200 p-5">
+          <h3 className="text-sm font-semibold text-slate-950">
+            Repository topics
+          </h3>
 
-                      <p className="mt-2 truncate text-lg font-semibold text-slate-950">
-                        {statistic.value}
-                      </p>
-                    </article>
-                  );
-                })}
-              </section>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Keywords added by the repository owner.
+          </p>
 
-              <section className="mt-5 grid gap-5 lg:grid-cols-[1.35fr_0.65fr]">
-                <article className="surface rounded-xl border border-slate-300/80">
-                  <div className="border-b border-slate-200 px-5 py-4">
-                    <h2 className="text-sm font-semibold">
-                      Repository details
-                    </h2>
-                  </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {repository.topics.length > 0 ? (
+              repository.topics.map((topic) => (
+                <span
+                  key={topic}
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-600 hover:border-slate-950 hover:bg-slate-950 hover:text-white"
+                >
+                  {topic}
+                </span>
+              ))
+            ) : (
+              <p className="text-xs text-slate-500">
+                No topics have been added to this repository.
+              </p>
+            )}
+          </div>
+        </article>
 
-                  <div className="divide-y divide-slate-200 px-5">
-                    {details.map((detail) => {
-                      const Icon = detail.icon;
+        <article className="surface rounded-2xl border border-slate-200 p-5">
+          <h3 className="text-sm font-semibold text-slate-950">
+            Repository owner
+          </h3>
 
-                      return (
-                        <div
-                          key={detail.label}
-                          className="flex items-center justify-between gap-4 py-3.5"
-                        >
-                          <div className="flex items-center gap-2 text-[13px] text-slate-500">
-                            <Icon className="size-3.5" />
-                            {detail.label}
-                          </div>
+          <div className="mt-4 flex items-center gap-3">
+            <img
+              src={repository.owner.avatarUrl}
+              alt={`${repository.owner.username} avatar`}
+              className="h-10 w-10 rounded-full border border-slate-200 object-cover"
+            />
 
-                          <span className="text-right text-[13px] font-medium text-slate-700">
-                            {detail.value}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </article>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-slate-950">
+                {repository.owner.username}
+              </p>
 
-                <div className="space-y-5">
-                  <article className="surface rounded-xl border border-slate-300/80 p-5">
-                    <h2 className="text-sm font-semibold">
-                      Repository owner
-                    </h2>
+              <p className="mt-0.5 text-xs text-slate-500">
+                GitHub repository owner
+              </p>
+            </div>
 
-                    <div className="mt-4 flex items-center gap-3">
-                      <span className="flex size-8 items-center justify-center rounded-full bg-slate-950 text-xs font-medium text-white">
-                        {repository.owner.username
-                          .charAt(0)
-                          .toUpperCase()}
-                      </span>
+            <a
+              href={repository.owner.githubUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg p-2 text-slate-500 hover:bg-slate-950 hover:text-white"
+              aria-label="Open owner GitHub profile"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          </div>
+        </article>
+      </section>
 
-                      <div>
-                        <p className="text-[13px] font-medium">
-                          {repository.owner.username}
-                        </p>
+      <section className="rounded-2xl border border-dashed border-slate-300 bg-white/60 p-5">
+        <div className="flex items-start gap-3">
+          <Bot className="mt-0.5 h-5 w-5 text-slate-700" />
 
-                        <a
-                          href={repository.owner.githubUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="-ml-1 mt-0.5 block w-fit rounded px-1 py-0.5 text-xs text-blue-600 hover:bg-blue-50"
-                        >
-                          View GitHub profile
-                        </a>
-                      </div>
-                    </div>
-                  </article>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-950">
+              AI repository explanation is coming next
+            </h3>
 
-                  <article className="surface rounded-xl border border-slate-300/80 p-5">
-                    <h2 className="text-sm font-semibold">
-                      Topics
-                    </h2>
-
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {repository.topics.length > 0 ? (
-                        repository.topics
-                          .slice(0, 10)
-                          .map((topic) => (
-                            <span
-                              key={topic}
-                              className="rounded-md bg-slate-100/90 px-2 py-1 text-xs text-slate-600"
-                            >
-                              {topic}
-                            </span>
-                          ))
-                      ) : (
-                        <p className="text-[13px] text-slate-500">
-                          No topics provided.
-                        </p>
-                      )}
-                    </div>
-                  </article>
-                </div>
-              </section>
-
-              <section className="mt-8">
-                <div className="surface flex items-center gap-3 rounded-xl border border-slate-300/80 p-2 shadow-sm">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                    <Bot className="size-4" />
-                  </span>
-
-                  <input
-                    type="text"
-                    disabled
-                    placeholder="Ask DevScope about this repository — coming soon"
-                    className="h-9 flex-1 bg-transparent text-[13px] text-slate-600 outline-none placeholder:text-slate-400"
-                  />
-
-                  <button
-                    type="button"
-                    disabled
-                    className="h-8 rounded-lg bg-slate-100 px-3 text-[13px] font-medium text-slate-400"
-                  >
-                    Ask
-                  </button>
-                </div>
-
-                <p className="mt-2 text-center text-xs text-slate-500">
-                  AI answers with references to repository files are
-                  coming in a later phase.
-                </p>
-              </section>
-            </>
-          )}
-        </main>
-      </div>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              DevScope will turn the detected architecture into a simple
+              explanation of how the repository works.
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
   );
+}
+
+function RepositoryStat({
+  icon,
+  value,
+  label,
+}: {
+  icon: ReactNode;
+  value: number;
+  label: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 text-slate-600">
+      {icon}
+
+      <span className="text-xs">
+        <strong className="font-semibold text-slate-950">
+          {value.toLocaleString()}
+        </strong>{" "}
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function InformationCard({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <article className="surface rounded-xl border border-slate-200 p-4">
+      <div className="flex items-center gap-2 text-slate-500">
+        {icon}
+
+        <p className="text-[10px] font-semibold uppercase tracking-[0.12em]">
+          {label}
+        </p>
+      </div>
+
+      <p className="mt-3 truncate text-sm font-semibold text-slate-950">
+        {value}
+      </p>
+    </article>
+  );
+}
+
+function MobileNavigationLink({
+  href,
+  active,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`whitespace-nowrap rounded-lg px-3 py-2 text-xs font-medium ${
+        active
+          ? "bg-slate-950 text-white"
+          : "text-slate-600 hover:bg-slate-200 hover:text-slate-950"
+      }`}
+    >
+      {children}
+    </Link>
+  );
+}
+
+function getNavigationClass(active: boolean) {
+  return `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition ${
+    active
+      ? "bg-white text-black"
+      : "text-slate-300 hover:bg-white/10 hover:text-white"
+  }`;
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(value));
 }
