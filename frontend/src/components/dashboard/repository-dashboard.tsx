@@ -382,7 +382,7 @@ export function RepositoryDashboard({
           </nav>
         </header>
 
-        <div className="max-w-[1180px] px-5 py-9 sm:px-7 lg:px-8">
+        <div className="w-full min-w-0 max-w-none px-5 py-9 sm:px-7 lg:px-8">
           <RepositoryDashboardContext.Provider value={repository}>
             {children}
           </RepositoryDashboardContext.Provider>

@@ -1,6 +1,7 @@
-import { ConfigService } from "@nestjs/config";
-import { RepositoriesService } from "./repositories.service";
-import { TechnologyDetectorService } from "./technology-detector.service";
+import { OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { RepositoriesService } from './repositories.service';
+import { TechnologyDetectorService } from './technology-detector.service';
 type GeneratedExplanation = {
     purpose: string;
     howItWorks: string;
@@ -17,17 +18,18 @@ type GeneratedExplanation = {
     }[];
     skills: string[];
     difficulty: {
-        level: "beginner" | "intermediate" | "advanced";
+        level: 'beginner' | 'intermediate' | 'advanced';
         reason: string;
     };
     keyTakeaways: string[];
 };
-export declare class RepositoryExplanationService {
+export declare class RepositoryExplanationService implements OnModuleInit {
     private readonly configService;
     private readonly repositoriesService;
     private readonly technologyDetectorService;
     private readonly logger;
     constructor(configService: ConfigService, repositoriesService: RepositoriesService, technologyDetectorService: TechnologyDetectorService);
+    onModuleInit(): void;
     explainRepository(url: string): Promise<{
         repository: {
             id: number;
@@ -59,5 +61,10 @@ export declare class RepositoryExplanationService {
         generatedAt: string;
         model: string;
     }>;
+    private getGeminiConfiguration;
+    private normalizeEnvironmentValue;
+    private getProviderErrorDetails;
+    private sanitizeLogValue;
+    private throwProviderException;
 }
 export {};

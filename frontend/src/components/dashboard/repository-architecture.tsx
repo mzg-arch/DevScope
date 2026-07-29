@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Code2,
   Layers3,
@@ -7,8 +8,8 @@ import {
   RefreshCw,
   TriangleAlert,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 
+import { RepositoryArchitectureMap } from "@/components/repository-architecture-map";
 import type { Repository } from "@/lib/repositories";
 import {
   detectRepositoryTechnologies,
@@ -207,6 +208,11 @@ export function RepositoryArchitecture({
           value={analysis.summary.detectedTechnologies}
         />
       </section>
+
+      <RepositoryArchitectureMap
+        repositoryName={repository.fullName}
+        technologies={analysis.technologies}
+      />
 
       <section className="surface rounded-2xl border border-slate-200 p-5">
         <div className="flex items-center gap-2">
