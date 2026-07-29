@@ -1,4 +1,4 @@
-# DevScope
+# DevScope V1
 
 DevScope is an AI-powered GitHub repository analyzer that helps developers understand unfamiliar public repositories quickly.
 
