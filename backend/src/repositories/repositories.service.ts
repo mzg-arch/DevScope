@@ -33,45 +33,37 @@ type GitHubRepositoryResponse = {
   } | null;
 };
 
+type GitHubTreeEntry = {
+  path: string;
+  mode: string;
+  type: "blob" | "tree" | "commit";
+  sha: string;
+  size?: number;
+  url: string;
+};
+
+type GitHubTreeResponse = {
+  sha: string;
+  tree: GitHubTreeEntry[];
+  truncated: boolean;
+};
+
+type GitHubErrorResponse = {
+  message?: string;
+};
+
 @Injectable()
 export class RepositoriesService {
+  private readonly githubApiUrl = "https://api.github.com";
+  private readonly maxTreeItems = 20_000;
+
   async inspectRepository(repositoryUrl: string) {
-    const { owner, repository } = this.extractRepository(repositoryUrl);
+    const { owner, repository } =
+      this.extractRepository(repositoryUrl);
 
-    const headers: Record<string, string> = {
-      Accept: "application/vnd.github+json",
-      "User-Agent": "DevScope",
-      "X-GitHub-Api-Version": "2026-03-10",
-    };
-
-    if (process.env.GITHUB_TOKEN) {
-      headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
-    }
-
-    const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repository}`,
-      { headers },
+    const data = await this.requestGitHub<GitHubRepositoryResponse>(
+      `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}`,
     );
-
-    if (response.status === 404) {
-      throw new NotFoundException(
-        "Repository not found. Make sure it exists and is public.",
-      );
-    }
-
-    if (response.status === 403 || response.status === 429) {
-      throw new ServiceUnavailableException(
-        "GitHub API rate limit reached. Please try again later.",
-      );
-    }
-
-    if (!response.ok) {
-      throw new BadGatewayException(
-        "DevScope could not retrieve this repository from GitHub.",
-      );
-    }
-
-    const data = (await response.json()) as GitHubRepositoryResponse;
 
     return {
       id: data.id,
@@ -103,6 +95,133 @@ export class RepositoriesService {
     };
   }
 
+  async getRepositoryTree(repositoryUrl: string) {
+    const repository =
+      await this.inspectRepository(repositoryUrl);
+
+    const owner = encodeURIComponent(repository.owner.username);
+    const name = encodeURIComponent(repository.name);
+    const branch = encodeURIComponent(repository.defaultBranch);
+
+    const tree = await this.requestGitHub<GitHubTreeResponse>(
+      `/repos/${owner}/${name}/git/trees/${branch}?recursive=1`,
+    );
+
+    const normalizedItems = tree.tree
+      .filter((item) => item.type === "blob" || item.type === "tree")
+      .map((item) => ({
+        path: item.path,
+        name: item.path.split("/").pop() ?? item.path,
+        type: item.type === "tree" ? "directory" : "file",
+        sha: item.sha,
+        size: item.size ?? null,
+        extension:
+          item.type === "blob"
+            ? this.getFileExtension(item.path)
+            : null,
+      }));
+
+    const files = normalizedItems.filter(
+      (item) => item.type === "file",
+    );
+
+    const directories = normalizedItems.filter(
+      (item) => item.type === "directory",
+    );
+
+    const extensionCounts = files.reduce<Record<string, number>>(
+      (counts, file) => {
+        if (!file.extension) {
+          return counts;
+        }
+
+        counts[file.extension] =
+          (counts[file.extension] ?? 0) + 1;
+
+        return counts;
+      },
+      {},
+    );
+
+    const topExtensions = Object.entries(extensionCounts)
+      .map(([extension, count]) => ({
+        extension,
+        count,
+      }))
+      .sort((first, second) => second.count - first.count)
+      .slice(0, 10);
+
+    return {
+      repository: {
+        name: repository.name,
+        fullName: repository.fullName,
+        branch: repository.defaultBranch,
+        githubUrl: repository.githubUrl,
+      },
+      summary: {
+        totalItemsReceived: normalizedItems.length,
+        totalFiles: files.length,
+        totalDirectories: directories.length,
+        topExtensions,
+      },
+      limits: {
+        truncatedByGitHub: tree.truncated,
+        limitedByDevScope:
+          normalizedItems.length > this.maxTreeItems,
+        maximumReturnedItems: this.maxTreeItems,
+      },
+      items: normalizedItems.slice(0, this.maxTreeItems),
+    };
+  }
+
+  private async requestGitHub<T>(endpoint: string): Promise<T> {
+    const headers: Record<string, string> = {
+      Accept: "application/vnd.github+json",
+      "User-Agent": "DevScope",
+      "X-GitHub-Api-Version": "2026-03-10",
+    };
+
+    if (process.env.GITHUB_TOKEN) {
+      headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+    }
+
+    const response = await fetch(
+      `${this.githubApiUrl}${endpoint}`,
+      { headers },
+    );
+
+    if (response.status === 404) {
+      throw new NotFoundException(
+        "Repository or requested GitHub resource was not found.",
+      );
+    }
+
+    if (response.status === 409) {
+      throw new BadRequestException(
+        "This repository is empty and does not have a file tree.",
+      );
+    }
+
+    if (response.status === 403 || response.status === 429) {
+      throw new ServiceUnavailableException(
+        "GitHub API rate limit reached. Please try again later.",
+      );
+    }
+
+    if (!response.ok) {
+      const error = (await response
+        .json()
+        .catch(() => ({}))) as GitHubErrorResponse;
+
+      throw new BadGatewayException(
+        error.message ??
+          "DevScope could not retrieve information from GitHub.",
+      );
+    }
+
+    return (await response.json()) as T;
+  }
+
   private extractRepository(repositoryUrl: string) {
     let parsedUrl: URL;
 
@@ -114,7 +233,10 @@ export class RepositoriesService {
 
     const hostname = parsedUrl.hostname.toLowerCase();
 
-    if (hostname !== "github.com" && hostname !== "www.github.com") {
+    if (
+      hostname !== "github.com" &&
+      hostname !== "www.github.com"
+    ) {
       throw new BadRequestException(
         "DevScope currently supports GitHub repositories only.",
       );
@@ -132,5 +254,19 @@ export class RepositoriesService {
     const repository = parts[1].replace(/\.git$/, "");
 
     return { owner, repository };
+  }
+
+  private getFileExtension(path: string) {
+    const fileName = path.split("/").pop() ?? path;
+    const lastDotIndex = fileName.lastIndexOf(".");
+
+    if (
+      lastDotIndex <= 0 ||
+      lastDotIndex === fileName.length - 1
+    ) {
+      return null;
+    }
+
+    return fileName.slice(lastDotIndex + 1).toLowerCase();
   }
 }

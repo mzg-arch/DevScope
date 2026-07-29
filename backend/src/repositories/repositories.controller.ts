@@ -20,4 +20,10 @@ export class RepositoriesController {
   inspectRepository(@Body() dto: InspectRepositoryDto) {
     return this.repositoriesService.inspectRepository(dto.url);
   }
+
+  @Post("tree")
+  @HttpCode(HttpStatus.OK)
+  getRepositoryTree(@Body() dto: InspectRepositoryDto) {
+    return this.repositoriesService.getRepositoryTree(dto.url);
+  }
 }

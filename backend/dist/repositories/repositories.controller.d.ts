@@ -29,4 +29,34 @@ export declare class RepositoriesController {
         updatedAt: string;
         pushedAt: string;
     }>;
+    getRepositoryTree(dto: InspectRepositoryDto): Promise<{
+        repository: {
+            name: string;
+            fullName: string;
+            branch: string;
+            githubUrl: string;
+        };
+        summary: {
+            totalItemsReceived: number;
+            totalFiles: number;
+            totalDirectories: number;
+            topExtensions: {
+                extension: string;
+                count: number;
+            }[];
+        };
+        limits: {
+            truncatedByGitHub: boolean;
+            limitedByDevScope: boolean;
+            maximumReturnedItems: number;
+        };
+        items: {
+            path: string;
+            name: string;
+            type: string;
+            sha: string;
+            size: number | null;
+            extension: string | null;
+        }[];
+    }>;
 }

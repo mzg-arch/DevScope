@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 
 import { RepositoryDashboard } from "@/components/dashboard/repository-dashboard";
 
-export default function RepositoryOverviewPage() {
+export default function RepositoryFilesPage() {
   const params = useParams<{
     owner: string;
     repository: string;
@@ -14,7 +14,7 @@ export default function RepositoryOverviewPage() {
     <RepositoryDashboard
       owner={decodeURIComponent(params.owner)}
       repositoryName={decodeURIComponent(params.repository)}
-      activeView="overview"
+      activeView="files"
     />
   );
 }

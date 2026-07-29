@@ -24,6 +24,9 @@ let RepositoriesController = class RepositoriesController {
     inspectRepository(dto) {
         return this.repositoriesService.inspectRepository(dto.url);
     }
+    getRepositoryTree(dto) {
+        return this.repositoriesService.getRepositoryTree(dto.url);
+    }
 };
 exports.RepositoriesController = RepositoriesController;
 __decorate([
@@ -34,6 +37,14 @@ __decorate([
     __metadata("design:paramtypes", [inspect_repository_dto_1.InspectRepositoryDto]),
     __metadata("design:returntype", void 0)
 ], RepositoriesController.prototype, "inspectRepository", null);
+__decorate([
+    (0, common_1.Post)("tree"),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [inspect_repository_dto_1.InspectRepositoryDto]),
+    __metadata("design:returntype", void 0)
+], RepositoriesController.prototype, "getRepositoryTree", null);
 exports.RepositoriesController = RepositoriesController = __decorate([
     (0, common_1.Controller)("repositories"),
     __metadata("design:paramtypes", [repositories_service_1.RepositoriesService])

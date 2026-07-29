@@ -1,12 +1,14 @@
 import type { Repository } from "@/types/repository";
+import type { RepositoryTreeResponse } from "@/types/repository-tree";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 
-export async function inspectRepository(
+async function postRepositoryRequest<T>(
+  endpoint: string,
   url: string,
-): Promise<Repository> {
-  const response = await fetch(`${API_URL}/repositories/inspect`, {
+): Promise<T> {
+  const response = await fetch(`${API_URL}${endpoint}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -21,8 +23,22 @@ export async function inspectRepository(
       ? data.message[0]
       : data.message;
 
-    throw new Error(message ?? "Unable to inspect this repository.");
+    throw new Error(message ?? "Unable to retrieve this repository.");
   }
 
-  return data as Repository;
+  return data as T;
+}
+
+export function inspectRepository(url: string) {
+  return postRepositoryRequest<Repository>(
+    "/repositories/inspect",
+    url,
+  );
+}
+
+export function getRepositoryTree(url: string) {
+  return postRepositoryRequest<RepositoryTreeResponse>(
+    "/repositories/tree",
+    url,
+  );
 }
