@@ -10,6 +10,7 @@ exports.RepositoriesModule = void 0;
 const common_1 = require("@nestjs/common");
 const repositories_controller_1 = require("./repositories.controller");
 const repositories_service_1 = require("./repositories.service");
+const repository_explanation_service_1 = require("./repository-explanation.service");
 const technology_detector_service_1 = require("./technology-detector.service");
 let RepositoriesModule = class RepositoriesModule {
 };
@@ -20,6 +21,7 @@ exports.RepositoriesModule = RepositoriesModule = __decorate([
         providers: [
             repositories_service_1.RepositoriesService,
             technology_detector_service_1.TechnologyDetectorService,
+            repository_explanation_service_1.RepositoryExplanationService,
         ],
     })
 ], RepositoriesModule);

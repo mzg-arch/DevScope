@@ -1,10 +1,12 @@
 import { InspectRepositoryDto } from "./dto/inspect-repository.dto";
 import { RepositoriesService } from "./repositories.service";
+import { RepositoryExplanationService } from "./repository-explanation.service";
 import { TechnologyDetectorService } from "./technology-detector.service";
 export declare class RepositoriesController {
     private readonly repositoriesService;
     private readonly technologyDetectorService;
-    constructor(repositoriesService: RepositoriesService, technologyDetectorService: TechnologyDetectorService);
+    private readonly repositoryExplanationService;
+    constructor(repositoriesService: RepositoriesService, technologyDetectorService: TechnologyDetectorService, repositoryExplanationService: RepositoryExplanationService);
     inspectRepository(dto: InspectRepositoryDto): Promise<{
         id: number;
         name: string;
@@ -90,5 +92,56 @@ export declare class RepositoriesController {
             limitedByDevScope: boolean;
             maximumReturnedItems: number;
         };
+    }>;
+    explainRepository(dto: InspectRepositoryDto): Promise<{
+        repository: {
+            id: number;
+            name: string;
+            fullName: string;
+            description: string | null;
+            githubUrl: string;
+            defaultBranch: string;
+            visibility: string;
+            archived: boolean;
+            language: string | null;
+            topics: string[];
+            stars: number;
+            forks: number;
+            openIssues: number;
+            license: {
+                name: string;
+                identifier: string;
+            } | null;
+            owner: {
+                username: string;
+                avatarUrl: string;
+                githubUrl: string;
+            };
+            updatedAt: string;
+            pushedAt: string;
+        };
+        explanation: {
+            purpose: string;
+            howItWorks: string;
+            architecture: {
+                name: string;
+                description: string;
+                evidencePaths: string[];
+            }[];
+            gettingStarted: {
+                step: number;
+                title: string;
+                description: string;
+                paths: string[];
+            }[];
+            skills: string[];
+            difficulty: {
+                level: "beginner" | "intermediate" | "advanced";
+                reason: string;
+            };
+            keyTakeaways: string[];
+        };
+        generatedAt: string;
+        model: string;
     }>;
 }

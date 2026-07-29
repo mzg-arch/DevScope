@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { RepositoriesController } from "./repositories.controller";
 import { RepositoriesService } from "./repositories.service";
+import { RepositoryExplanationService } from "./repository-explanation.service";
 import { TechnologyDetectorService } from "./technology-detector.service";
 
 @Module({
@@ -9,6 +10,7 @@ import { TechnologyDetectorService } from "./technology-detector.service";
   providers: [
     RepositoriesService,
     TechnologyDetectorService,
+    RepositoryExplanationService,
   ],
 })
 export class RepositoriesModule {}
