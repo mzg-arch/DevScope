@@ -6,6 +6,8 @@ import {
   ServiceUnavailableException,
 } from "@nestjs/common";
 
+import { RepositoryPersistenceService } from "./repository-persistence.service";
+
 type GitHubRepositoryResponse = {
   id: number;
   name: string;
@@ -33,6 +35,13 @@ type GitHubRepositoryResponse = {
   } | null;
 };
 
+type GitHubBranchResponse = {
+  name: string;
+  commit: {
+    sha: string;
+  };
+};
+
 type GitHubTreeEntry = {
   path: string;
   mode: string;
@@ -52,12 +61,50 @@ type GitHubErrorResponse = {
   message?: string;
 };
 
+export type InspectedRepository = {
+  id: number;
+  name: string;
+  fullName: string;
+  description: string | null;
+  githubUrl: string;
+  defaultBranch: string;
+  visibility: string;
+  archived: boolean;
+  language: string | null;
+  topics: string[];
+  stars: number;
+  forks: number;
+  openIssues: number;
+  license: {
+    name: string;
+    identifier: string;
+  } | null;
+  owner: {
+    username: string;
+    avatarUrl: string;
+    githubUrl: string;
+  };
+  updatedAt: string;
+  pushedAt: string;
+};
+
+export type RepositoryVersion = {
+  repository: InspectedRepository;
+  commitSha: string;
+};
+
 @Injectable()
 export class RepositoriesService {
   private readonly githubApiUrl = "https://api.github.com";
   private readonly maxTreeItems = 20_000;
 
-  async inspectRepository(repositoryUrl: string) {
+  constructor(
+    private readonly repositoryPersistenceService: RepositoryPersistenceService,
+  ) {}
+
+  async inspectRepository(
+    repositoryUrl: string,
+  ): Promise<InspectedRepository> {
     const { owner, repository } =
       this.extractRepository(repositoryUrl);
 
@@ -65,7 +112,7 @@ export class RepositoriesService {
       `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}`,
     );
 
-    return {
+    const repositoryDetails: InspectedRepository = {
       id: data.id,
       name: data.name,
       fullName: data.full_name,
@@ -93,26 +140,71 @@ export class RepositoriesService {
       updatedAt: data.updated_at,
       pushedAt: data.pushed_at,
     };
+
+    await this.repositoryPersistenceService.saveRepository(
+      repositoryDetails,
+    );
+
+    return repositoryDetails;
   }
 
-  async getRepositoryTree(repositoryUrl: string) {
+  async getRepositoryVersion(
+    repositoryUrl: string,
+  ): Promise<RepositoryVersion> {
     const repository =
       await this.inspectRepository(repositoryUrl);
 
-    const owner = encodeURIComponent(repository.owner.username);
+    const owner = encodeURIComponent(
+      repository.owner.username,
+    );
     const name = encodeURIComponent(repository.name);
-    const branch = encodeURIComponent(repository.defaultBranch);
+    const branch = encodeURIComponent(
+      repository.defaultBranch,
+    );
+
+    const branchData =
+      await this.requestGitHub<GitHubBranchResponse>(
+        `/repos/${owner}/${name}/branches/${branch}`,
+      );
+
+    return {
+      repository,
+      commitSha: branchData.commit.sha,
+    };
+  }
+
+  async getRepositoryTree(
+    repositoryUrl: string,
+    existingVersion?: RepositoryVersion,
+  ) {
+    const version =
+      existingVersion ??
+      (await this.getRepositoryVersion(repositoryUrl));
+
+    const repository = version.repository;
+
+    const owner = encodeURIComponent(
+      repository.owner.username,
+    );
+    const name = encodeURIComponent(repository.name);
+    const branch = encodeURIComponent(
+      repository.defaultBranch,
+    );
 
     const tree = await this.requestGitHub<GitHubTreeResponse>(
       `/repos/${owner}/${name}/git/trees/${branch}?recursive=1`,
     );
 
     const normalizedItems = tree.tree
-      .filter((item) => item.type === "blob" || item.type === "tree")
+      .filter(
+        (item) =>
+          item.type === "blob" || item.type === "tree",
+      )
       .map((item) => ({
         path: item.path,
         name: item.path.split("/").pop() ?? item.path,
-        type: item.type === "tree" ? "directory" : "file",
+        type:
+          item.type === "tree" ? "directory" : "file",
         sha: item.sha,
         size: item.size ?? null,
         extension:
@@ -148,7 +240,9 @@ export class RepositoriesService {
         extension,
         count,
       }))
-      .sort((first, second) => second.count - first.count)
+      .sort(
+        (first, second) => second.count - first.count,
+      )
       .slice(0, 10);
 
     return {
@@ -158,6 +252,7 @@ export class RepositoriesService {
         branch: repository.defaultBranch,
         githubUrl: repository.githubUrl,
       },
+      commitSha: version.commitSha,
       summary: {
         totalItemsReceived: normalizedItems.length,
         totalFiles: files.length,
@@ -170,11 +265,16 @@ export class RepositoriesService {
           normalizedItems.length > this.maxTreeItems,
         maximumReturnedItems: this.maxTreeItems,
       },
-      items: normalizedItems.slice(0, this.maxTreeItems),
+      items: normalizedItems.slice(
+        0,
+        this.maxTreeItems,
+      ),
     };
   }
 
-  private async requestGitHub<T>(endpoint: string): Promise<T> {
+  private async requestGitHub<T>(
+    endpoint: string,
+  ): Promise<T> {
     const headers: Record<string, string> = {
       Accept: "application/vnd.github+json",
       "User-Agent": "DevScope",
@@ -187,7 +287,9 @@ export class RepositoriesService {
 
     const response = await fetch(
       `${this.githubApiUrl}${endpoint}`,
-      { headers },
+      {
+        headers,
+      },
     );
 
     if (response.status === 404) {
@@ -202,7 +304,10 @@ export class RepositoriesService {
       );
     }
 
-    if (response.status === 403 || response.status === 429) {
+    if (
+      response.status === 403 ||
+      response.status === 429
+    ) {
       throw new ServiceUnavailableException(
         "GitHub API rate limit reached. Please try again later.",
       );
@@ -228,7 +333,9 @@ export class RepositoriesService {
     try {
       parsedUrl = new URL(repositoryUrl);
     } catch {
-      throw new BadRequestException("Invalid repository URL.");
+      throw new BadRequestException(
+        "Invalid repository URL.",
+      );
     }
 
     const hostname = parsedUrl.hostname.toLowerCase();
@@ -242,7 +349,9 @@ export class RepositoriesService {
       );
     }
 
-    const parts = parsedUrl.pathname.split("/").filter(Boolean);
+    const parts = parsedUrl.pathname
+      .split("/")
+      .filter(Boolean);
 
     if (parts.length < 2) {
       throw new BadRequestException(
@@ -253,7 +362,10 @@ export class RepositoriesService {
     const owner = parts[0];
     const repository = parts[1].replace(/\.git$/, "");
 
-    return { owner, repository };
+    return {
+      owner,
+      repository,
+    };
   }
 
   private getFileExtension(path: string) {
@@ -267,6 +379,8 @@ export class RepositoriesService {
       return null;
     }
 
-    return fileName.slice(lastDotIndex + 1).toLowerCase();
+    return fileName
+      .slice(lastDotIndex + 1)
+      .toLowerCase();
   }
 }

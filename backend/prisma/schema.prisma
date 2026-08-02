@@ -1,0 +1,129 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  runtime             = "nodejs"
+  moduleFormat        = "cjs"
+  generatedFileExtension = "ts"
+  importFileExtension = ""
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AnalysisStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model Repository {
+  id                String    @id @default(cuid())
+  githubId          String    @unique
+  owner             String
+  name              String
+  fullName          String    @unique
+  githubUrl         String    @unique
+  description       String?   @db.Text
+  defaultBranch     String
+  visibility        String
+  archived          Boolean   @default(false)
+  primaryLanguage   String?
+  topics            String[]
+  stars             Int       @default(0)
+  forks             Int       @default(0)
+  openIssues        Int       @default(0)
+  licenseName       String?
+  licenseIdentifier String?
+  ownerAvatarUrl    String?
+  githubUpdatedAt   DateTime?
+  githubPushedAt    DateTime?
+  lastSyncedAt      DateTime  @default(now())
+
+  snapshots RepositorySnapshot[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([owner, name])
+  @@index([lastSyncedAt])
+}
+
+model RepositorySnapshot {
+  id                  String         @id @default(cuid())
+  repositoryId        String
+  repository          Repository     @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  commitSha           String
+  branch              String
+  status              AnalysisStatus @default(PENDING)
+  treeData            Json?
+  treeTruncated       Boolean        @default(false)
+  itemsAnalyzed       Int            @default(0)
+  analysisStartedAt   DateTime?
+  analysisCompletedAt DateTime?
+  failureReason       String?        @db.Text
+
+  languages    LanguageStatistic[]
+  technologies TechnologyDetection[]
+  explanations AiExplanation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([repositoryId, commitSha])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model LanguageStatistic {
+  id         String             @id @default(cuid())
+  snapshotId String
+  snapshot   RepositorySnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  name       String
+  fileCount  Int
+  percentage Float
+  extensions String[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([snapshotId, name])
+  @@index([snapshotId])
+}
+
+model TechnologyDetection {
+  id         String             @id @default(cuid())
+  snapshotId String
+  snapshot   RepositorySnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  name       String
+  category   String
+  confidence String
+  evidence   String[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([snapshotId, category, name])
+  @@index([snapshotId])
+}
+
+model AiExplanation {
+  id               String             @id @default(cuid())
+  snapshotId       String
+  snapshot         RepositorySnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  model            String
+  purpose          String             @db.Text
+  howItWorks       String             @db.Text
+  architecture     Json
+  gettingStarted   Json
+  skills           String[]
+  difficultyLevel  String
+  difficultyReason String             @db.Text
+  keyTakeaways     String[]
+  generatedAt      DateTime           @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([snapshotId, model])
+  @@index([snapshotId])
+}
