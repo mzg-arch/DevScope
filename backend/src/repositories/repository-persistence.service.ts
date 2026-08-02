@@ -225,6 +225,106 @@ export class RepositoryPersistenceService {
       });
     });
   }
+  async findSavedExplanation(
+  repositoryFullName: string,
+  commitSha: string,
+  model: string,
+) {
+  const snapshot =
+    await this.prisma.repositorySnapshot.findFirst({
+      where: {
+        commitSha,
+        status: "COMPLETED",
+        repository: {
+          is: {
+            fullName: repositoryFullName,
+          },
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+  if (!snapshot) {
+    return null;
+  }
+
+  return this.prisma.aiExplanation.findUnique({
+    where: {
+      snapshotId_model: {
+        snapshotId: snapshot.id,
+        model,
+      },
+    },
+  });
+}
+
+async saveExplanation(input: {
+  repositoryFullName: string;
+  commitSha: string;
+  model: string;
+  purpose: string;
+  howItWorks: string;
+  architecture: unknown;
+  gettingStarted: unknown;
+  skills: string[];
+  difficultyLevel: string;
+  difficultyReason: string;
+  keyTakeaways: string[];
+  generatedAt: Date;
+}) {
+  const snapshot =
+    await this.prisma.repositorySnapshot.findFirst({
+      where: {
+        commitSha: input.commitSha,
+        status: "COMPLETED",
+        repository: {
+          is: {
+            fullName: input.repositoryFullName,
+          },
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+  if (!snapshot) {
+    throw new Error(
+      `No completed snapshot exists for ${input.repositoryFullName} at ${input.commitSha}.`,
+    );
+  }
+
+  const explanationData = {
+    model: input.model,
+    purpose: input.purpose,
+    howItWorks: input.howItWorks,
+    architecture:
+      input.architecture as Prisma.InputJsonValue,
+    gettingStarted:
+      input.gettingStarted as Prisma.InputJsonValue,
+    skills: input.skills,
+    difficultyLevel: input.difficultyLevel,
+    difficultyReason: input.difficultyReason,
+    keyTakeaways: input.keyTakeaways,
+    generatedAt: input.generatedAt,
+  };
+
+  return this.prisma.aiExplanation.upsert({
+    where: {
+      snapshotId_model: {
+        snapshotId: snapshot.id,
+        model: input.model,
+      },
+    },
+    create: {
+      snapshotId: snapshot.id,
+      ...explanationData,
+    },
+    update: explanationData,
+  });
+}
 
   async findRepositoryByFullName(fullName: string) {
     return this.prisma.repository.findUnique({

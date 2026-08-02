@@ -1,5 +1,6 @@
 import { OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { RepositoryPersistenceService } from './repository-persistence.service';
 import { RepositoriesService } from './repositories.service';
 import { TechnologyDetectorService } from './technology-detector.service';
 type GeneratedExplanation = {
@@ -34,10 +35,10 @@ export declare class RepositoryExplanationService implements OnModuleInit {
     private readonly configService;
     private readonly repositoriesService;
     private readonly technologyDetectorService;
+    private readonly repositoryPersistenceService;
     private readonly logger;
-    private readonly explanationCache;
     private readonly inFlightRequests;
-    constructor(configService: ConfigService, repositoriesService: RepositoriesService, technologyDetectorService: TechnologyDetectorService);
+    constructor(configService: ConfigService, repositoriesService: RepositoriesService, technologyDetectorService: TechnologyDetectorService, repositoryPersistenceService: RepositoryPersistenceService);
     onModuleInit(): void;
     explainRepository(url: string): Promise<RepositoryExplanationResult>;
     private generateRepositoryExplanation;
@@ -47,7 +48,6 @@ export declare class RepositoryExplanationService implements OnModuleInit {
     private calculateRetryDelay;
     private wait;
     private createCacheKey;
-    private getCachedExplanation;
     private getGeminiConfiguration;
     private normalizeEnvironmentValue;
     private getProviderErrorDetails;

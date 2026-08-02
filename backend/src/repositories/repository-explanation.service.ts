@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenAI } from '@google/genai';
-
+import { RepositoryPersistenceService } from './repository-persistence.service';
 import { RepositoriesService } from './repositories.service';
 import { TechnologyDetectorService } from './technology-detector.service';
 
@@ -45,10 +45,6 @@ type RepositoryExplanationResult = {
   model: string;
 };
 
-type CachedExplanation = {
-  value: RepositoryExplanationResult;
-  expiresAt: number;
-};
 
 type ProviderErrorDetails = {
   status?: number;
@@ -169,10 +165,7 @@ const MAX_GEMINI_ATTEMPTS = 2;
 const INITIAL_RETRY_DELAY_MS = 2_000;
 const MAX_RETRY_JITTER_MS = 750;
 
-/*
- * Successful explanations stay cached for 30 minutes.
- */
-const EXPLANATION_CACHE_TTL_MS = 30 * 60 * 1_000;
+
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -210,10 +203,7 @@ export class RepositoryExplanationService implements OnModuleInit {
     RepositoryExplanationService.name,
   );
 
-  private readonly explanationCache = new Map<
-    string,
-    CachedExplanation
-  >();
+ 
 
   private readonly inFlightRequests = new Map<
     string,
@@ -221,10 +211,11 @@ export class RepositoryExplanationService implements OnModuleInit {
   >();
 
   constructor(
-    private readonly configService: ConfigService,
-    private readonly repositoriesService: RepositoriesService,
-    private readonly technologyDetectorService: TechnologyDetectorService,
-  ) {}
+  private readonly configService: ConfigService,
+  private readonly repositoriesService: RepositoriesService,
+  private readonly technologyDetectorService: TechnologyDetectorService,
+  private readonly repositoryPersistenceService: RepositoryPersistenceService,
+) {}
 
   onModuleInit() {
     const { apiKey, model } = this.getGeminiConfiguration();
@@ -236,50 +227,33 @@ export class RepositoryExplanationService implements OnModuleInit {
     );
   }
 
-  async explainRepository(
-    url: string,
-  ): Promise<RepositoryExplanationResult> {
-    const cacheKey = this.createCacheKey(url);
+async explainRepository(
+  url: string,
+): Promise<RepositoryExplanationResult> {
+  const cacheKey = this.createCacheKey(url);
 
-    const cachedExplanation =
-      this.getCachedExplanation(cacheKey);
+  const existingRequest =
+    this.inFlightRequests.get(cacheKey);
 
-    if (cachedExplanation) {
-      this.logger.log(
-        `Returning cached AI explanation repository=${cacheKey}`,
-      );
+  if (existingRequest) {
+    this.logger.log(
+      `Joining existing AI explanation request repository=${cacheKey}`,
+    );
 
-      return cachedExplanation;
-    }
-
-    const existingRequest = this.inFlightRequests.get(cacheKey);
-
-    if (existingRequest) {
-      this.logger.log(
-        `Joining existing AI explanation request repository=${cacheKey}`,
-      );
-
-      return existingRequest;
-    }
-
-    const request = this.generateRepositoryExplanation(url);
-
-    this.inFlightRequests.set(cacheKey, request);
-
-    try {
-      const result = await request;
-
-      this.explanationCache.set(cacheKey, {
-        value: result,
-        expiresAt: Date.now() + EXPLANATION_CACHE_TTL_MS,
-      });
-
-      return result;
-    } finally {
-      this.inFlightRequests.delete(cacheKey);
-    }
+    return existingRequest;
   }
 
+  const request =
+    this.generateRepositoryExplanation(url);
+
+  this.inFlightRequests.set(cacheKey, request);
+
+  try {
+    return await request;
+  } finally {
+    this.inFlightRequests.delete(cacheKey);
+  }
+}
   private async generateRepositoryExplanation(
     url: string,
   ): Promise<RepositoryExplanationResult> {
@@ -295,6 +269,49 @@ export class RepositoryExplanationService implements OnModuleInit {
       this.repositoriesService.inspectRepository(url),
       this.technologyDetectorService.detectTechnologies(url),
     ]);
+    const commitSha = analysis.cache.commitSha;
+
+try {
+  const savedExplanation =
+    await this.repositoryPersistenceService.findSavedExplanation(
+      repository.fullName,
+      commitSha,
+      model,
+    );
+
+  if (savedExplanation) {
+    this.logger.log(
+      `Returning persistent AI explanation repository=${repository.fullName} commit=${commitSha}`,
+    );
+
+    return {
+      repository,
+      explanation: {
+        purpose: savedExplanation.purpose,
+        howItWorks: savedExplanation.howItWorks,
+        architecture:
+          savedExplanation.architecture as unknown as GeneratedExplanation['architecture'],
+        gettingStarted:
+          savedExplanation.gettingStarted as unknown as GeneratedExplanation['gettingStarted'],
+        skills: savedExplanation.skills,
+        difficulty: {
+          level:
+            savedExplanation.difficultyLevel as GeneratedExplanation['difficulty']['level'],
+          reason: savedExplanation.difficultyReason,
+        },
+        keyTakeaways:
+          savedExplanation.keyTakeaways,
+      },
+      generatedAt:
+        savedExplanation.generatedAt.toISOString(),
+      model: savedExplanation.model,
+    };
+  }
+} catch (error) {
+  this.logger.warn(
+    `Persistent explanation lookup failed repository=${repository.fullName}`,
+  );
+}
 
     const evidencePaths = Array.from(
       new Set(
@@ -382,12 +399,38 @@ ${JSON.stringify(promptContext, null, 2)}
           })),
       };
 
-      return {
-        repository,
-        explanation: safeExplanation,
-        generatedAt: new Date().toISOString(),
-        model,
-      };
+      const generatedAt = new Date();
+
+try {
+  await this.repositoryPersistenceService.saveExplanation({
+    repositoryFullName: repository.fullName,
+    commitSha,
+    model,
+    purpose: safeExplanation.purpose,
+    howItWorks: safeExplanation.howItWorks,
+    architecture: safeExplanation.architecture,
+    gettingStarted: safeExplanation.gettingStarted,
+    skills: safeExplanation.skills,
+    difficultyLevel:
+      safeExplanation.difficulty.level,
+    difficultyReason:
+      safeExplanation.difficulty.reason,
+    keyTakeaways:
+      safeExplanation.keyTakeaways,
+    generatedAt,
+  });
+} catch (error) {
+  this.logger.warn(
+    `Could not persist AI explanation repository=${repository.fullName}`,
+  );
+}
+
+return {
+  repository,
+  explanation: safeExplanation,
+  generatedAt: generatedAt.toISOString(),
+  model,
+};
     } catch (error) {
       const details = this.getProviderErrorDetails(
         error,
@@ -549,23 +592,7 @@ ${JSON.stringify(promptContext, null, 2)}
       .toLowerCase();
   }
 
-  private getCachedExplanation(
-    cacheKey: string,
-  ): RepositoryExplanationResult | undefined {
-    const cached = this.explanationCache.get(cacheKey);
-
-    if (!cached) {
-      return undefined;
-    }
-
-    if (cached.expiresAt <= Date.now()) {
-      this.explanationCache.delete(cacheKey);
-      return undefined;
-    }
-
-    return cached.value;
-  }
-
+ 
   private getGeminiConfiguration() {
     const apiKey = this.normalizeEnvironmentValue(
       this.configService.get<string>('GEMINI_API_KEY'),

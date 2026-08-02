@@ -14,6 +14,7 @@ exports.RepositoryExplanationService = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const genai_1 = require("@google/genai");
+const repository_persistence_service_1 = require("./repository-persistence.service");
 const repositories_service_1 = require("./repositories.service");
 const technology_detector_service_1 = require("./technology-detector.service");
 const EXPLANATION_SCHEMA = {
@@ -116,7 +117,6 @@ const MAX_PROVIDER_LOG_VALUE_LENGTH = 500;
 const MAX_GEMINI_ATTEMPTS = 2;
 const INITIAL_RETRY_DELAY_MS = 2_000;
 const MAX_RETRY_JITTER_MS = 750;
-const EXPLANATION_CACHE_TTL_MS = 30 * 60 * 1_000;
 function isRecord(value) {
     return typeof value === 'object' && value !== null;
 }
@@ -141,13 +141,14 @@ let RepositoryExplanationService = RepositoryExplanationService_1 = class Reposi
     configService;
     repositoriesService;
     technologyDetectorService;
+    repositoryPersistenceService;
     logger = new common_1.Logger(RepositoryExplanationService_1.name);
-    explanationCache = new Map();
     inFlightRequests = new Map();
-    constructor(configService, repositoriesService, technologyDetectorService) {
+    constructor(configService, repositoriesService, technologyDetectorService, repositoryPersistenceService) {
         this.configService = configService;
         this.repositoriesService = repositoriesService;
         this.technologyDetectorService = technologyDetectorService;
+        this.repositoryPersistenceService = repositoryPersistenceService;
     }
     onModuleInit() {
         const { apiKey, model } = this.getGeminiConfiguration();
@@ -155,11 +156,6 @@ let RepositoryExplanationService = RepositoryExplanationService_1 = class Reposi
     }
     async explainRepository(url) {
         const cacheKey = this.createCacheKey(url);
-        const cachedExplanation = this.getCachedExplanation(cacheKey);
-        if (cachedExplanation) {
-            this.logger.log(`Returning cached AI explanation repository=${cacheKey}`);
-            return cachedExplanation;
-        }
         const existingRequest = this.inFlightRequests.get(cacheKey);
         if (existingRequest) {
             this.logger.log(`Joining existing AI explanation request repository=${cacheKey}`);
@@ -168,12 +164,7 @@ let RepositoryExplanationService = RepositoryExplanationService_1 = class Reposi
         const request = this.generateRepositoryExplanation(url);
         this.inFlightRequests.set(cacheKey, request);
         try {
-            const result = await request;
-            this.explanationCache.set(cacheKey, {
-                value: result,
-                expiresAt: Date.now() + EXPLANATION_CACHE_TTL_MS,
-            });
-            return result;
+            return await request;
         }
         finally {
             this.inFlightRequests.delete(cacheKey);
@@ -188,6 +179,33 @@ let RepositoryExplanationService = RepositoryExplanationService_1 = class Reposi
             this.repositoriesService.inspectRepository(url),
             this.technologyDetectorService.detectTechnologies(url),
         ]);
+        const commitSha = analysis.cache.commitSha;
+        try {
+            const savedExplanation = await this.repositoryPersistenceService.findSavedExplanation(repository.fullName, commitSha, model);
+            if (savedExplanation) {
+                this.logger.log(`Returning persistent AI explanation repository=${repository.fullName} commit=${commitSha}`);
+                return {
+                    repository,
+                    explanation: {
+                        purpose: savedExplanation.purpose,
+                        howItWorks: savedExplanation.howItWorks,
+                        architecture: savedExplanation.architecture,
+                        gettingStarted: savedExplanation.gettingStarted,
+                        skills: savedExplanation.skills,
+                        difficulty: {
+                            level: savedExplanation.difficultyLevel,
+                            reason: savedExplanation.difficultyReason,
+                        },
+                        keyTakeaways: savedExplanation.keyTakeaways,
+                    },
+                    generatedAt: savedExplanation.generatedAt.toISOString(),
+                    model: savedExplanation.model,
+                };
+            }
+        }
+        catch (error) {
+            this.logger.warn(`Persistent explanation lookup failed repository=${repository.fullName}`);
+        }
         const evidencePaths = Array.from(new Set(analysis.technologies.flatMap((technology) => technology.evidence))).slice(0, 100);
         const promptContext = {
             repository: {
@@ -251,10 +269,30 @@ ${JSON.stringify(promptContext, null, 2)}
                         .slice(0, 4),
                 })),
             };
+            const generatedAt = new Date();
+            try {
+                await this.repositoryPersistenceService.saveExplanation({
+                    repositoryFullName: repository.fullName,
+                    commitSha,
+                    model,
+                    purpose: safeExplanation.purpose,
+                    howItWorks: safeExplanation.howItWorks,
+                    architecture: safeExplanation.architecture,
+                    gettingStarted: safeExplanation.gettingStarted,
+                    skills: safeExplanation.skills,
+                    difficultyLevel: safeExplanation.difficulty.level,
+                    difficultyReason: safeExplanation.difficulty.reason,
+                    keyTakeaways: safeExplanation.keyTakeaways,
+                    generatedAt,
+                });
+            }
+            catch (error) {
+                this.logger.warn(`Could not persist AI explanation repository=${repository.fullName}`);
+            }
             return {
                 repository,
                 explanation: safeExplanation,
-                generatedAt: new Date().toISOString(),
+                generatedAt: generatedAt.toISOString(),
                 model,
             };
         }
@@ -342,17 +380,6 @@ ${JSON.stringify(promptContext, null, 2)}
             .trim()
             .replace(/\/+$/, '')
             .toLowerCase();
-    }
-    getCachedExplanation(cacheKey) {
-        const cached = this.explanationCache.get(cacheKey);
-        if (!cached) {
-            return undefined;
-        }
-        if (cached.expiresAt <= Date.now()) {
-            this.explanationCache.delete(cacheKey);
-            return undefined;
-        }
-        return cached.value;
     }
     getGeminiConfiguration() {
         const apiKey = this.normalizeEnvironmentValue(this.configService.get('GEMINI_API_KEY'), 'GEMINI_API_KEY');
@@ -473,6 +500,7 @@ exports.RepositoryExplanationService = RepositoryExplanationService = Repository
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [config_1.ConfigService,
         repositories_service_1.RepositoriesService,
-        technology_detector_service_1.TechnologyDetectorService])
+        technology_detector_service_1.TechnologyDetectorService,
+        repository_persistence_service_1.RepositoryPersistenceService])
 ], RepositoryExplanationService);
 //# sourceMappingURL=repository-explanation.service.js.map

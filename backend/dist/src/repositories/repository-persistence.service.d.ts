@@ -158,6 +158,51 @@ export declare class RepositoryPersistenceService {
         analysisCompletedAt: Date | null;
         failureReason: string | null;
     }>;
+    findSavedExplanation(repositoryFullName: string, commitSha: string, model: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        snapshotId: string;
+        model: string;
+        purpose: string;
+        howItWorks: string;
+        architecture: import("@prisma/client/runtime/client").JsonValue;
+        gettingStarted: import("@prisma/client/runtime/client").JsonValue;
+        skills: string[];
+        difficultyLevel: string;
+        difficultyReason: string;
+        keyTakeaways: string[];
+        generatedAt: Date;
+    } | null>;
+    saveExplanation(input: {
+        repositoryFullName: string;
+        commitSha: string;
+        model: string;
+        purpose: string;
+        howItWorks: string;
+        architecture: unknown;
+        gettingStarted: unknown;
+        skills: string[];
+        difficultyLevel: string;
+        difficultyReason: string;
+        keyTakeaways: string[];
+        generatedAt: Date;
+    }): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        snapshotId: string;
+        model: string;
+        purpose: string;
+        howItWorks: string;
+        architecture: import("@prisma/client/runtime/client").JsonValue;
+        gettingStarted: import("@prisma/client/runtime/client").JsonValue;
+        skills: string[];
+        difficultyLevel: string;
+        difficultyReason: string;
+        keyTakeaways: string[];
+        generatedAt: Date;
+    }>;
     findRepositoryByFullName(fullName: string): Promise<({
         snapshots: {
             id: string;
