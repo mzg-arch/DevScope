@@ -97,7 +97,12 @@ export type RepositoryVersion = {
 export class RepositoriesService {
   private readonly githubApiUrl = "https://api.github.com";
   private readonly maxTreeItems = 20_000;
+  getRepositoryFullName(repositoryUrl: string) {
+  const { owner, repository } =
+    this.extractRepository(repositoryUrl);
 
+  return `${owner}/${repository}`;
+}
   constructor(
     private readonly repositoryPersistenceService: RepositoryPersistenceService,
   ) {}

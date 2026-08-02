@@ -1,12 +1,14 @@
 import { InspectRepositoryDto } from "./dto/inspect-repository.dto";
 import { RepositoriesService } from "./repositories.service";
 import { RepositoryExplanationService } from "./repository-explanation.service";
+import { RepositoryPersistenceService } from "./repository-persistence.service";
 import { TechnologyDetectorService } from "./technology-detector.service";
 export declare class RepositoriesController {
     private readonly repositoriesService;
     private readonly technologyDetectorService;
     private readonly repositoryExplanationService;
-    constructor(repositoriesService: RepositoriesService, technologyDetectorService: TechnologyDetectorService, repositoryExplanationService: RepositoryExplanationService);
+    private readonly repositoryPersistenceService;
+    constructor(repositoriesService: RepositoriesService, technologyDetectorService: TechnologyDetectorService, repositoryExplanationService: RepositoryExplanationService, repositoryPersistenceService: RepositoryPersistenceService);
     inspectRepository(dto: InspectRepositoryDto): Promise<import("./repositories.service").InspectedRepository>;
     getRepositoryTree(dto: InspectRepositoryDto): Promise<{
         repository: {
@@ -98,5 +100,37 @@ export declare class RepositoriesController {
         };
         generatedAt: string;
         model: string;
+    }>;
+    getRepositoryHistory(dto: InspectRepositoryDto): Promise<{
+        repository: {
+            owner: string;
+            name: string;
+            fullName: string;
+            githubUrl: string;
+            defaultBranch: string;
+            primaryLanguage: string | null;
+            lastSyncedAt: Date;
+        };
+        summary: {
+            totalSnapshots: number;
+            completedSnapshots: number;
+            latestAnalyzedAt: Date;
+        };
+        snapshots: {
+            id: string;
+            commitSha: string;
+            shortCommitSha: string;
+            branch: string;
+            status: import("../generated/prisma/enums").AnalysisStatus;
+            itemsAnalyzed: number;
+            languageCount: number;
+            technologyCount: number;
+            hasAiExplanation: boolean;
+            aiModels: string[];
+            generatedAt: Date;
+            truncatedByGitHub: boolean;
+            limitedByDevScope: boolean;
+            analyzedAt: Date;
+        }[];
     }>;
 }

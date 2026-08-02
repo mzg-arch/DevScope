@@ -16,6 +16,10 @@ let RepositoriesService = class RepositoriesService {
     repositoryPersistenceService;
     githubApiUrl = "https://api.github.com";
     maxTreeItems = 20_000;
+    getRepositoryFullName(repositoryUrl) {
+        const { owner, repository } = this.extractRepository(repositoryUrl);
+        return `${owner}/${repository}`;
+    }
     constructor(repositoryPersistenceService) {
         this.repositoryPersistenceService = repositoryPersistenceService;
     }

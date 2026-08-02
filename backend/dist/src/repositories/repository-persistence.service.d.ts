@@ -203,6 +203,38 @@ export declare class RepositoryPersistenceService {
         keyTakeaways: string[];
         generatedAt: Date;
     }>;
+    getRepositoryHistory(fullName: string): Promise<{
+        repository: {
+            owner: string;
+            name: string;
+            fullName: string;
+            githubUrl: string;
+            defaultBranch: string;
+            primaryLanguage: string | null;
+            lastSyncedAt: Date;
+        };
+        summary: {
+            totalSnapshots: number;
+            completedSnapshots: number;
+            latestAnalyzedAt: Date;
+        };
+        snapshots: {
+            id: string;
+            commitSha: string;
+            shortCommitSha: string;
+            branch: string;
+            status: import("../generated/prisma/enums").AnalysisStatus;
+            itemsAnalyzed: number;
+            languageCount: number;
+            technologyCount: number;
+            hasAiExplanation: boolean;
+            aiModels: string[];
+            generatedAt: Date;
+            truncatedByGitHub: boolean;
+            limitedByDevScope: boolean;
+            analyzedAt: Date;
+        }[];
+    } | null>;
     findRepositoryByFullName(fullName: string): Promise<({
         snapshots: {
             id: string;

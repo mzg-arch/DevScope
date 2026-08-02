@@ -33,6 +33,7 @@ export declare class RepositoriesService {
     private readonly repositoryPersistenceService;
     private readonly githubApiUrl;
     private readonly maxTreeItems;
+    getRepositoryFullName(repositoryUrl: string): string;
     constructor(repositoryPersistenceService: RepositoryPersistenceService);
     inspectRepository(repositoryUrl: string): Promise<InspectedRepository>;
     getRepositoryVersion(repositoryUrl: string): Promise<RepositoryVersion>;

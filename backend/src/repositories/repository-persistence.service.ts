@@ -325,6 +325,106 @@ async saveExplanation(input: {
     update: explanationData,
   });
 }
+async getRepositoryHistory(fullName: string) {
+  const repository =
+    await this.prisma.repository.findFirst({
+      where: {
+        fullName: {
+          equals: fullName,
+          mode: "insensitive",
+        },
+      },
+      select: {
+        id: true,
+        owner: true,
+        name: true,
+        fullName: true,
+        githubUrl: true,
+        defaultBranch: true,
+        primaryLanguage: true,
+        lastSyncedAt: true,
+        snapshots: {
+          orderBy: {
+            createdAt: "desc",
+          },
+          select: {
+            id: true,
+            commitSha: true,
+            branch: true,
+            status: true,
+            itemsAnalyzed: true,
+            truncatedByGitHub: true,
+            limitedByDevScope: true,
+            createdAt: true,
+            analysisCompletedAt: true,
+            _count: {
+              select: {
+                languages: true,
+                technologies: true,
+                explanations: true,
+              },
+            },
+            explanations: {
+              select: {
+                model: true,
+                generatedAt: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+  if (!repository) {
+    return null;
+  }
+
+  return {
+    repository: {
+      owner: repository.owner,
+      name: repository.name,
+      fullName: repository.fullName,
+      githubUrl: repository.githubUrl,
+      defaultBranch: repository.defaultBranch,
+      primaryLanguage: repository.primaryLanguage,
+      lastSyncedAt: repository.lastSyncedAt,
+    },
+    summary: {
+      totalSnapshots: repository.snapshots.length,
+      completedSnapshots: repository.snapshots.filter(
+        (snapshot) => snapshot.status === "COMPLETED",
+      ).length,
+      latestAnalyzedAt:
+        repository.snapshots[0]?.analysisCompletedAt ??
+        repository.snapshots[0]?.createdAt ??
+        null,
+    },
+    snapshots: repository.snapshots.map((snapshot) => ({
+      id: snapshot.id,
+      commitSha: snapshot.commitSha,
+      shortCommitSha: snapshot.commitSha.slice(0, 7),
+      branch: snapshot.branch,
+      status: snapshot.status,
+      itemsAnalyzed: snapshot.itemsAnalyzed,
+      languageCount: snapshot._count.languages,
+      technologyCount: snapshot._count.technologies,
+      hasAiExplanation:
+        snapshot._count.explanations > 0,
+      aiModels: snapshot.explanations.map(
+        (explanation) => explanation.model,
+      ),
+      generatedAt:
+        snapshot.explanations[0]?.generatedAt ?? null,
+      truncatedByGitHub:
+        snapshot.truncatedByGitHub,
+      limitedByDevScope:
+        snapshot.limitedByDevScope,
+      analyzedAt:
+        snapshot.analysisCompletedAt ??
+        snapshot.createdAt,
+    })),
+  };
+}
 
   async findRepositoryByFullName(fullName: string) {
     return this.prisma.repository.findUnique({

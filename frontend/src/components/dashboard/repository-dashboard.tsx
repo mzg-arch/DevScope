@@ -33,6 +33,7 @@ import {
   useState,
 } from "react";
 
+import { RepositoryHistory } from "@/components/dashboard/repository-history";
 import { DevScopeMark } from "@/components/devscope-mark";
 import { RepositoryArchitecture } from "@/components/dashboard/repository-architecture";
 import { RepositoryExplanation } from "@/components/dashboard/repository-explanation";
@@ -46,6 +47,7 @@ type DashboardView =
   | "overview"
   | "files"
   | "architecture"
+  | "history"
   | "ask";
 
 type RepositoryDashboardProps = {
@@ -257,6 +259,16 @@ export function RepositoryDashboard({
             Architecture
           </Link>
 
+            <Link
+            href={`${dashboardBasePath}/history`}
+            className={getNavigationClass(
+              activeView === "history",
+            )}
+          >
+            <Clock3 className="h-4 w-4" />
+            History
+          </Link>
+
           <Link
             href={`${dashboardBasePath}/ask`}
             className={getNavigationClass(activeView === "ask")}
@@ -372,7 +384,12 @@ export function RepositoryDashboard({
             >
               Architecture
             </MobileNavigationLink>
-
+           <MobileNavigationLink
+  href={`${dashboardBasePath}/history`}
+  active={activeView === "history"}
+>
+  History
+</MobileNavigationLink>
             <MobileNavigationLink
               href={`${dashboardBasePath}/ask`}
               active={activeView === "ask"}
@@ -408,6 +425,11 @@ export function RepositoryArchitectureView() {
   const repository = useRepositoryDashboard();
 
   return <RepositoryArchitecture repository={repository} />;
+}
+export function RepositoryHistoryView() {
+  const repository = useRepositoryDashboard();
+
+  return <RepositoryHistory repository={repository} />;
 }
 
 export function RepositoryExplanationView() {
@@ -697,6 +719,7 @@ function getDashboardView(
   if (
     selectedSegment === "files" ||
     selectedSegment === "architecture" ||
+    selectedSegment === "history" ||
     selectedSegment === "ask"
   ) {
     return selectedSegment;
@@ -704,7 +727,6 @@ function getDashboardView(
 
   return "overview";
 }
-
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",

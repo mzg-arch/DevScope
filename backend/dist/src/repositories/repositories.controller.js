@@ -17,15 +17,18 @@ const common_1 = require("@nestjs/common");
 const inspect_repository_dto_1 = require("./dto/inspect-repository.dto");
 const repositories_service_1 = require("./repositories.service");
 const repository_explanation_service_1 = require("./repository-explanation.service");
+const repository_persistence_service_1 = require("./repository-persistence.service");
 const technology_detector_service_1 = require("./technology-detector.service");
 let RepositoriesController = class RepositoriesController {
     repositoriesService;
     technologyDetectorService;
     repositoryExplanationService;
-    constructor(repositoriesService, technologyDetectorService, repositoryExplanationService) {
+    repositoryPersistenceService;
+    constructor(repositoriesService, technologyDetectorService, repositoryExplanationService, repositoryPersistenceService) {
         this.repositoriesService = repositoriesService;
         this.technologyDetectorService = technologyDetectorService;
         this.repositoryExplanationService = repositoryExplanationService;
+        this.repositoryPersistenceService = repositoryPersistenceService;
     }
     inspectRepository(dto) {
         return this.repositoriesService.inspectRepository(dto.url);
@@ -38,6 +41,14 @@ let RepositoriesController = class RepositoriesController {
     }
     explainRepository(dto) {
         return this.repositoryExplanationService.explainRepository(dto.url);
+    }
+    async getRepositoryHistory(dto) {
+        const fullName = this.repositoriesService.getRepositoryFullName(dto.url);
+        const history = await this.repositoryPersistenceService.getRepositoryHistory(fullName);
+        if (!history) {
+            throw new common_1.NotFoundException("No saved analysis history exists for this repository.");
+        }
+        return history;
     }
 };
 exports.RepositoriesController = RepositoriesController;
@@ -73,10 +84,19 @@ __decorate([
     __metadata("design:paramtypes", [inspect_repository_dto_1.InspectRepositoryDto]),
     __metadata("design:returntype", void 0)
 ], RepositoriesController.prototype, "explainRepository", null);
+__decorate([
+    (0, common_1.Post)("history"),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [inspect_repository_dto_1.InspectRepositoryDto]),
+    __metadata("design:returntype", Promise)
+], RepositoriesController.prototype, "getRepositoryHistory", null);
 exports.RepositoriesController = RepositoriesController = __decorate([
     (0, common_1.Controller)("repositories"),
     __metadata("design:paramtypes", [repositories_service_1.RepositoriesService,
         technology_detector_service_1.TechnologyDetectorService,
-        repository_explanation_service_1.RepositoryExplanationService])
+        repository_explanation_service_1.RepositoryExplanationService,
+        repository_persistence_service_1.RepositoryPersistenceService])
 ], RepositoriesController);
 //# sourceMappingURL=repositories.controller.js.map
