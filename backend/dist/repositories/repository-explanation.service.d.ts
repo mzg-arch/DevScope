@@ -23,47 +23,35 @@ type GeneratedExplanation = {
     };
     keyTakeaways: string[];
 };
+type RepositoryDetails = Awaited<ReturnType<RepositoriesService['inspectRepository']>>;
+type RepositoryExplanationResult = {
+    repository: RepositoryDetails;
+    explanation: GeneratedExplanation;
+    generatedAt: string;
+    model: string;
+};
 export declare class RepositoryExplanationService implements OnModuleInit {
     private readonly configService;
     private readonly repositoriesService;
     private readonly technologyDetectorService;
     private readonly logger;
+    private readonly explanationCache;
+    private readonly inFlightRequests;
     constructor(configService: ConfigService, repositoriesService: RepositoriesService, technologyDetectorService: TechnologyDetectorService);
     onModuleInit(): void;
-    explainRepository(url: string): Promise<{
-        repository: {
-            id: number;
-            name: string;
-            fullName: string;
-            description: string | null;
-            githubUrl: string;
-            defaultBranch: string;
-            visibility: string;
-            archived: boolean;
-            language: string | null;
-            topics: string[];
-            stars: number;
-            forks: number;
-            openIssues: number;
-            license: {
-                name: string;
-                identifier: string;
-            } | null;
-            owner: {
-                username: string;
-                avatarUrl: string;
-                githubUrl: string;
-            };
-            updatedAt: string;
-            pushedAt: string;
-        };
-        explanation: GeneratedExplanation;
-        generatedAt: string;
-        model: string;
-    }>;
+    explainRepository(url: string): Promise<RepositoryExplanationResult>;
+    private generateRepositoryExplanation;
+    private createGeminiInteractionWithRetry;
+    private isTransientProviderError;
+    private isRateLimitError;
+    private calculateRetryDelay;
+    private wait;
+    private createCacheKey;
+    private getCachedExplanation;
     private getGeminiConfiguration;
     private normalizeEnvironmentValue;
     private getProviderErrorDetails;
+    private extractRetryAfterSeconds;
     private sanitizeLogValue;
     private throwProviderException;
 }
