@@ -58,7 +58,9 @@ export declare const RepositorySnapshotScalarFieldEnum: {
     readonly branch: "branch";
     readonly status: "status";
     readonly treeData: "treeData";
-    readonly treeTruncated: "treeTruncated";
+    readonly truncatedByGitHub: "truncatedByGitHub";
+    readonly limitedByDevScope: "limitedByDevScope";
+    readonly maximumReturnedItems: "maximumReturnedItems";
     readonly itemsAnalyzed: "itemsAnalyzed";
     readonly analysisStartedAt: "analysisStartedAt";
     readonly analysisCompletedAt: "analysisCompletedAt";

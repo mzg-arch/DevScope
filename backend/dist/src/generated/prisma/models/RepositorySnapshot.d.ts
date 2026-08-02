@@ -10,9 +10,11 @@ export type AggregateRepositorySnapshot = {
     _max: RepositorySnapshotMaxAggregateOutputType | null;
 };
 export type RepositorySnapshotAvgAggregateOutputType = {
+    maximumReturnedItems: number | null;
     itemsAnalyzed: number | null;
 };
 export type RepositorySnapshotSumAggregateOutputType = {
+    maximumReturnedItems: number | null;
     itemsAnalyzed: number | null;
 };
 export type RepositorySnapshotMinAggregateOutputType = {
@@ -21,7 +23,9 @@ export type RepositorySnapshotMinAggregateOutputType = {
     commitSha: string | null;
     branch: string | null;
     status: $Enums.AnalysisStatus | null;
-    treeTruncated: boolean | null;
+    truncatedByGitHub: boolean | null;
+    limitedByDevScope: boolean | null;
+    maximumReturnedItems: number | null;
     itemsAnalyzed: number | null;
     analysisStartedAt: Date | null;
     analysisCompletedAt: Date | null;
@@ -35,7 +39,9 @@ export type RepositorySnapshotMaxAggregateOutputType = {
     commitSha: string | null;
     branch: string | null;
     status: $Enums.AnalysisStatus | null;
-    treeTruncated: boolean | null;
+    truncatedByGitHub: boolean | null;
+    limitedByDevScope: boolean | null;
+    maximumReturnedItems: number | null;
     itemsAnalyzed: number | null;
     analysisStartedAt: Date | null;
     analysisCompletedAt: Date | null;
@@ -50,7 +56,9 @@ export type RepositorySnapshotCountAggregateOutputType = {
     branch: number;
     status: number;
     treeData: number;
-    treeTruncated: number;
+    truncatedByGitHub: number;
+    limitedByDevScope: number;
+    maximumReturnedItems: number;
     itemsAnalyzed: number;
     analysisStartedAt: number;
     analysisCompletedAt: number;
@@ -60,9 +68,11 @@ export type RepositorySnapshotCountAggregateOutputType = {
     _all: number;
 };
 export type RepositorySnapshotAvgAggregateInputType = {
+    maximumReturnedItems?: true;
     itemsAnalyzed?: true;
 };
 export type RepositorySnapshotSumAggregateInputType = {
+    maximumReturnedItems?: true;
     itemsAnalyzed?: true;
 };
 export type RepositorySnapshotMinAggregateInputType = {
@@ -71,7 +81,9 @@ export type RepositorySnapshotMinAggregateInputType = {
     commitSha?: true;
     branch?: true;
     status?: true;
-    treeTruncated?: true;
+    truncatedByGitHub?: true;
+    limitedByDevScope?: true;
+    maximumReturnedItems?: true;
     itemsAnalyzed?: true;
     analysisStartedAt?: true;
     analysisCompletedAt?: true;
@@ -85,7 +97,9 @@ export type RepositorySnapshotMaxAggregateInputType = {
     commitSha?: true;
     branch?: true;
     status?: true;
-    treeTruncated?: true;
+    truncatedByGitHub?: true;
+    limitedByDevScope?: true;
+    maximumReturnedItems?: true;
     itemsAnalyzed?: true;
     analysisStartedAt?: true;
     analysisCompletedAt?: true;
@@ -100,7 +114,9 @@ export type RepositorySnapshotCountAggregateInputType = {
     branch?: true;
     status?: true;
     treeData?: true;
-    treeTruncated?: true;
+    truncatedByGitHub?: true;
+    limitedByDevScope?: true;
+    maximumReturnedItems?: true;
     itemsAnalyzed?: true;
     analysisStartedAt?: true;
     analysisCompletedAt?: true;
@@ -144,7 +160,9 @@ export type RepositorySnapshotGroupByOutputType = {
     branch: string;
     status: $Enums.AnalysisStatus;
     treeData: runtime.JsonValue | null;
-    treeTruncated: boolean;
+    truncatedByGitHub: boolean;
+    limitedByDevScope: boolean;
+    maximumReturnedItems: number;
     itemsAnalyzed: number;
     analysisStartedAt: Date | null;
     analysisCompletedAt: Date | null;
@@ -170,7 +188,9 @@ export type RepositorySnapshotWhereInput = {
     branch?: Prisma.StringFilter<"RepositorySnapshot"> | string;
     status?: Prisma.EnumAnalysisStatusFilter<"RepositorySnapshot"> | $Enums.AnalysisStatus;
     treeData?: Prisma.JsonNullableFilter<"RepositorySnapshot">;
-    treeTruncated?: Prisma.BoolFilter<"RepositorySnapshot"> | boolean;
+    truncatedByGitHub?: Prisma.BoolFilter<"RepositorySnapshot"> | boolean;
+    limitedByDevScope?: Prisma.BoolFilter<"RepositorySnapshot"> | boolean;
+    maximumReturnedItems?: Prisma.IntFilter<"RepositorySnapshot"> | number;
     itemsAnalyzed?: Prisma.IntFilter<"RepositorySnapshot"> | number;
     analysisStartedAt?: Prisma.DateTimeNullableFilter<"RepositorySnapshot"> | Date | string | null;
     analysisCompletedAt?: Prisma.DateTimeNullableFilter<"RepositorySnapshot"> | Date | string | null;
@@ -189,7 +209,9 @@ export type RepositorySnapshotOrderByWithRelationInput = {
     branch?: Prisma.SortOrder;
     status?: Prisma.SortOrder;
     treeData?: Prisma.SortOrderInput | Prisma.SortOrder;
-    treeTruncated?: Prisma.SortOrder;
+    truncatedByGitHub?: Prisma.SortOrder;
+    limitedByDevScope?: Prisma.SortOrder;
+    maximumReturnedItems?: Prisma.SortOrder;
     itemsAnalyzed?: Prisma.SortOrder;
     analysisStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder;
     analysisCompletedAt?: Prisma.SortOrderInput | Prisma.SortOrder;
@@ -212,7 +234,9 @@ export type RepositorySnapshotWhereUniqueInput = Prisma.AtLeast<{
     branch?: Prisma.StringFilter<"RepositorySnapshot"> | string;
     status?: Prisma.EnumAnalysisStatusFilter<"RepositorySnapshot"> | $Enums.AnalysisStatus;
     treeData?: Prisma.JsonNullableFilter<"RepositorySnapshot">;
-    treeTruncated?: Prisma.BoolFilter<"RepositorySnapshot"> | boolean;
+    truncatedByGitHub?: Prisma.BoolFilter<"RepositorySnapshot"> | boolean;
+    limitedByDevScope?: Prisma.BoolFilter<"RepositorySnapshot"> | boolean;
+    maximumReturnedItems?: Prisma.IntFilter<"RepositorySnapshot"> | number;
     itemsAnalyzed?: Prisma.IntFilter<"RepositorySnapshot"> | number;
     analysisStartedAt?: Prisma.DateTimeNullableFilter<"RepositorySnapshot"> | Date | string | null;
     analysisCompletedAt?: Prisma.DateTimeNullableFilter<"RepositorySnapshot"> | Date | string | null;
@@ -231,7 +255,9 @@ export type RepositorySnapshotOrderByWithAggregationInput = {
     branch?: Prisma.SortOrder;
     status?: Prisma.SortOrder;
     treeData?: Prisma.SortOrderInput | Prisma.SortOrder;
-    treeTruncated?: Prisma.SortOrder;
+    truncatedByGitHub?: Prisma.SortOrder;
+    limitedByDevScope?: Prisma.SortOrder;
+    maximumReturnedItems?: Prisma.SortOrder;
     itemsAnalyzed?: Prisma.SortOrder;
     analysisStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder;
     analysisCompletedAt?: Prisma.SortOrderInput | Prisma.SortOrder;
@@ -254,7 +280,9 @@ export type RepositorySnapshotScalarWhereWithAggregatesInput = {
     branch?: Prisma.StringWithAggregatesFilter<"RepositorySnapshot"> | string;
     status?: Prisma.EnumAnalysisStatusWithAggregatesFilter<"RepositorySnapshot"> | $Enums.AnalysisStatus;
     treeData?: Prisma.JsonNullableWithAggregatesFilter<"RepositorySnapshot">;
-    treeTruncated?: Prisma.BoolWithAggregatesFilter<"RepositorySnapshot"> | boolean;
+    truncatedByGitHub?: Prisma.BoolWithAggregatesFilter<"RepositorySnapshot"> | boolean;
+    limitedByDevScope?: Prisma.BoolWithAggregatesFilter<"RepositorySnapshot"> | boolean;
+    maximumReturnedItems?: Prisma.IntWithAggregatesFilter<"RepositorySnapshot"> | number;
     itemsAnalyzed?: Prisma.IntWithAggregatesFilter<"RepositorySnapshot"> | number;
     analysisStartedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"RepositorySnapshot"> | Date | string | null;
     analysisCompletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"RepositorySnapshot"> | Date | string | null;
@@ -268,7 +296,9 @@ export type RepositorySnapshotCreateInput = {
     branch: string;
     status?: $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: boolean;
+    truncatedByGitHub?: boolean;
+    limitedByDevScope?: boolean;
+    maximumReturnedItems?: number;
     itemsAnalyzed?: number;
     analysisStartedAt?: Date | string | null;
     analysisCompletedAt?: Date | string | null;
@@ -287,7 +317,9 @@ export type RepositorySnapshotUncheckedCreateInput = {
     branch: string;
     status?: $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: boolean;
+    truncatedByGitHub?: boolean;
+    limitedByDevScope?: boolean;
+    maximumReturnedItems?: number;
     itemsAnalyzed?: number;
     analysisStartedAt?: Date | string | null;
     analysisCompletedAt?: Date | string | null;
@@ -304,7 +336,9 @@ export type RepositorySnapshotUpdateInput = {
     branch?: Prisma.StringFieldUpdateOperationsInput | string;
     status?: Prisma.EnumAnalysisStatusFieldUpdateOperationsInput | $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    truncatedByGitHub?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    limitedByDevScope?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    maximumReturnedItems?: Prisma.IntFieldUpdateOperationsInput | number;
     itemsAnalyzed?: Prisma.IntFieldUpdateOperationsInput | number;
     analysisStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     analysisCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -323,7 +357,9 @@ export type RepositorySnapshotUncheckedUpdateInput = {
     branch?: Prisma.StringFieldUpdateOperationsInput | string;
     status?: Prisma.EnumAnalysisStatusFieldUpdateOperationsInput | $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    truncatedByGitHub?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    limitedByDevScope?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    maximumReturnedItems?: Prisma.IntFieldUpdateOperationsInput | number;
     itemsAnalyzed?: Prisma.IntFieldUpdateOperationsInput | number;
     analysisStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     analysisCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -341,7 +377,9 @@ export type RepositorySnapshotCreateManyInput = {
     branch: string;
     status?: $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: boolean;
+    truncatedByGitHub?: boolean;
+    limitedByDevScope?: boolean;
+    maximumReturnedItems?: number;
     itemsAnalyzed?: number;
     analysisStartedAt?: Date | string | null;
     analysisCompletedAt?: Date | string | null;
@@ -355,7 +393,9 @@ export type RepositorySnapshotUpdateManyMutationInput = {
     branch?: Prisma.StringFieldUpdateOperationsInput | string;
     status?: Prisma.EnumAnalysisStatusFieldUpdateOperationsInput | $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    truncatedByGitHub?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    limitedByDevScope?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    maximumReturnedItems?: Prisma.IntFieldUpdateOperationsInput | number;
     itemsAnalyzed?: Prisma.IntFieldUpdateOperationsInput | number;
     analysisStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     analysisCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -370,7 +410,9 @@ export type RepositorySnapshotUncheckedUpdateManyInput = {
     branch?: Prisma.StringFieldUpdateOperationsInput | string;
     status?: Prisma.EnumAnalysisStatusFieldUpdateOperationsInput | $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    truncatedByGitHub?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    limitedByDevScope?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    maximumReturnedItems?: Prisma.IntFieldUpdateOperationsInput | number;
     itemsAnalyzed?: Prisma.IntFieldUpdateOperationsInput | number;
     analysisStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     analysisCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -397,7 +439,9 @@ export type RepositorySnapshotCountOrderByAggregateInput = {
     branch?: Prisma.SortOrder;
     status?: Prisma.SortOrder;
     treeData?: Prisma.SortOrder;
-    treeTruncated?: Prisma.SortOrder;
+    truncatedByGitHub?: Prisma.SortOrder;
+    limitedByDevScope?: Prisma.SortOrder;
+    maximumReturnedItems?: Prisma.SortOrder;
     itemsAnalyzed?: Prisma.SortOrder;
     analysisStartedAt?: Prisma.SortOrder;
     analysisCompletedAt?: Prisma.SortOrder;
@@ -406,6 +450,7 @@ export type RepositorySnapshotCountOrderByAggregateInput = {
     updatedAt?: Prisma.SortOrder;
 };
 export type RepositorySnapshotAvgOrderByAggregateInput = {
+    maximumReturnedItems?: Prisma.SortOrder;
     itemsAnalyzed?: Prisma.SortOrder;
 };
 export type RepositorySnapshotMaxOrderByAggregateInput = {
@@ -414,7 +459,9 @@ export type RepositorySnapshotMaxOrderByAggregateInput = {
     commitSha?: Prisma.SortOrder;
     branch?: Prisma.SortOrder;
     status?: Prisma.SortOrder;
-    treeTruncated?: Prisma.SortOrder;
+    truncatedByGitHub?: Prisma.SortOrder;
+    limitedByDevScope?: Prisma.SortOrder;
+    maximumReturnedItems?: Prisma.SortOrder;
     itemsAnalyzed?: Prisma.SortOrder;
     analysisStartedAt?: Prisma.SortOrder;
     analysisCompletedAt?: Prisma.SortOrder;
@@ -428,7 +475,9 @@ export type RepositorySnapshotMinOrderByAggregateInput = {
     commitSha?: Prisma.SortOrder;
     branch?: Prisma.SortOrder;
     status?: Prisma.SortOrder;
-    treeTruncated?: Prisma.SortOrder;
+    truncatedByGitHub?: Prisma.SortOrder;
+    limitedByDevScope?: Prisma.SortOrder;
+    maximumReturnedItems?: Prisma.SortOrder;
     itemsAnalyzed?: Prisma.SortOrder;
     analysisStartedAt?: Prisma.SortOrder;
     analysisCompletedAt?: Prisma.SortOrder;
@@ -437,6 +486,7 @@ export type RepositorySnapshotMinOrderByAggregateInput = {
     updatedAt?: Prisma.SortOrder;
 };
 export type RepositorySnapshotSumOrderByAggregateInput = {
+    maximumReturnedItems?: Prisma.SortOrder;
     itemsAnalyzed?: Prisma.SortOrder;
 };
 export type RepositorySnapshotScalarRelationFilter = {
@@ -526,7 +576,9 @@ export type RepositorySnapshotCreateWithoutRepositoryInput = {
     branch: string;
     status?: $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: boolean;
+    truncatedByGitHub?: boolean;
+    limitedByDevScope?: boolean;
+    maximumReturnedItems?: number;
     itemsAnalyzed?: number;
     analysisStartedAt?: Date | string | null;
     analysisCompletedAt?: Date | string | null;
@@ -543,7 +595,9 @@ export type RepositorySnapshotUncheckedCreateWithoutRepositoryInput = {
     branch: string;
     status?: $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: boolean;
+    truncatedByGitHub?: boolean;
+    limitedByDevScope?: boolean;
+    maximumReturnedItems?: number;
     itemsAnalyzed?: number;
     analysisStartedAt?: Date | string | null;
     analysisCompletedAt?: Date | string | null;
@@ -585,7 +639,9 @@ export type RepositorySnapshotScalarWhereInput = {
     branch?: Prisma.StringFilter<"RepositorySnapshot"> | string;
     status?: Prisma.EnumAnalysisStatusFilter<"RepositorySnapshot"> | $Enums.AnalysisStatus;
     treeData?: Prisma.JsonNullableFilter<"RepositorySnapshot">;
-    treeTruncated?: Prisma.BoolFilter<"RepositorySnapshot"> | boolean;
+    truncatedByGitHub?: Prisma.BoolFilter<"RepositorySnapshot"> | boolean;
+    limitedByDevScope?: Prisma.BoolFilter<"RepositorySnapshot"> | boolean;
+    maximumReturnedItems?: Prisma.IntFilter<"RepositorySnapshot"> | number;
     itemsAnalyzed?: Prisma.IntFilter<"RepositorySnapshot"> | number;
     analysisStartedAt?: Prisma.DateTimeNullableFilter<"RepositorySnapshot"> | Date | string | null;
     analysisCompletedAt?: Prisma.DateTimeNullableFilter<"RepositorySnapshot"> | Date | string | null;
@@ -599,7 +655,9 @@ export type RepositorySnapshotCreateWithoutLanguagesInput = {
     branch: string;
     status?: $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: boolean;
+    truncatedByGitHub?: boolean;
+    limitedByDevScope?: boolean;
+    maximumReturnedItems?: number;
     itemsAnalyzed?: number;
     analysisStartedAt?: Date | string | null;
     analysisCompletedAt?: Date | string | null;
@@ -617,7 +675,9 @@ export type RepositorySnapshotUncheckedCreateWithoutLanguagesInput = {
     branch: string;
     status?: $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: boolean;
+    truncatedByGitHub?: boolean;
+    limitedByDevScope?: boolean;
+    maximumReturnedItems?: number;
     itemsAnalyzed?: number;
     analysisStartedAt?: Date | string | null;
     analysisCompletedAt?: Date | string | null;
@@ -646,7 +706,9 @@ export type RepositorySnapshotUpdateWithoutLanguagesInput = {
     branch?: Prisma.StringFieldUpdateOperationsInput | string;
     status?: Prisma.EnumAnalysisStatusFieldUpdateOperationsInput | $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    truncatedByGitHub?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    limitedByDevScope?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    maximumReturnedItems?: Prisma.IntFieldUpdateOperationsInput | number;
     itemsAnalyzed?: Prisma.IntFieldUpdateOperationsInput | number;
     analysisStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     analysisCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -664,7 +726,9 @@ export type RepositorySnapshotUncheckedUpdateWithoutLanguagesInput = {
     branch?: Prisma.StringFieldUpdateOperationsInput | string;
     status?: Prisma.EnumAnalysisStatusFieldUpdateOperationsInput | $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    truncatedByGitHub?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    limitedByDevScope?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    maximumReturnedItems?: Prisma.IntFieldUpdateOperationsInput | number;
     itemsAnalyzed?: Prisma.IntFieldUpdateOperationsInput | number;
     analysisStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     analysisCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -680,7 +744,9 @@ export type RepositorySnapshotCreateWithoutTechnologiesInput = {
     branch: string;
     status?: $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: boolean;
+    truncatedByGitHub?: boolean;
+    limitedByDevScope?: boolean;
+    maximumReturnedItems?: number;
     itemsAnalyzed?: number;
     analysisStartedAt?: Date | string | null;
     analysisCompletedAt?: Date | string | null;
@@ -698,7 +764,9 @@ export type RepositorySnapshotUncheckedCreateWithoutTechnologiesInput = {
     branch: string;
     status?: $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: boolean;
+    truncatedByGitHub?: boolean;
+    limitedByDevScope?: boolean;
+    maximumReturnedItems?: number;
     itemsAnalyzed?: number;
     analysisStartedAt?: Date | string | null;
     analysisCompletedAt?: Date | string | null;
@@ -727,7 +795,9 @@ export type RepositorySnapshotUpdateWithoutTechnologiesInput = {
     branch?: Prisma.StringFieldUpdateOperationsInput | string;
     status?: Prisma.EnumAnalysisStatusFieldUpdateOperationsInput | $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    truncatedByGitHub?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    limitedByDevScope?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    maximumReturnedItems?: Prisma.IntFieldUpdateOperationsInput | number;
     itemsAnalyzed?: Prisma.IntFieldUpdateOperationsInput | number;
     analysisStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     analysisCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -745,7 +815,9 @@ export type RepositorySnapshotUncheckedUpdateWithoutTechnologiesInput = {
     branch?: Prisma.StringFieldUpdateOperationsInput | string;
     status?: Prisma.EnumAnalysisStatusFieldUpdateOperationsInput | $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    truncatedByGitHub?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    limitedByDevScope?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    maximumReturnedItems?: Prisma.IntFieldUpdateOperationsInput | number;
     itemsAnalyzed?: Prisma.IntFieldUpdateOperationsInput | number;
     analysisStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     analysisCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -761,7 +833,9 @@ export type RepositorySnapshotCreateWithoutExplanationsInput = {
     branch: string;
     status?: $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: boolean;
+    truncatedByGitHub?: boolean;
+    limitedByDevScope?: boolean;
+    maximumReturnedItems?: number;
     itemsAnalyzed?: number;
     analysisStartedAt?: Date | string | null;
     analysisCompletedAt?: Date | string | null;
@@ -779,7 +853,9 @@ export type RepositorySnapshotUncheckedCreateWithoutExplanationsInput = {
     branch: string;
     status?: $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: boolean;
+    truncatedByGitHub?: boolean;
+    limitedByDevScope?: boolean;
+    maximumReturnedItems?: number;
     itemsAnalyzed?: number;
     analysisStartedAt?: Date | string | null;
     analysisCompletedAt?: Date | string | null;
@@ -808,7 +884,9 @@ export type RepositorySnapshotUpdateWithoutExplanationsInput = {
     branch?: Prisma.StringFieldUpdateOperationsInput | string;
     status?: Prisma.EnumAnalysisStatusFieldUpdateOperationsInput | $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    truncatedByGitHub?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    limitedByDevScope?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    maximumReturnedItems?: Prisma.IntFieldUpdateOperationsInput | number;
     itemsAnalyzed?: Prisma.IntFieldUpdateOperationsInput | number;
     analysisStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     analysisCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -826,7 +904,9 @@ export type RepositorySnapshotUncheckedUpdateWithoutExplanationsInput = {
     branch?: Prisma.StringFieldUpdateOperationsInput | string;
     status?: Prisma.EnumAnalysisStatusFieldUpdateOperationsInput | $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    truncatedByGitHub?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    limitedByDevScope?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    maximumReturnedItems?: Prisma.IntFieldUpdateOperationsInput | number;
     itemsAnalyzed?: Prisma.IntFieldUpdateOperationsInput | number;
     analysisStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     analysisCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -842,7 +922,9 @@ export type RepositorySnapshotCreateManyRepositoryInput = {
     branch: string;
     status?: $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: boolean;
+    truncatedByGitHub?: boolean;
+    limitedByDevScope?: boolean;
+    maximumReturnedItems?: number;
     itemsAnalyzed?: number;
     analysisStartedAt?: Date | string | null;
     analysisCompletedAt?: Date | string | null;
@@ -856,7 +938,9 @@ export type RepositorySnapshotUpdateWithoutRepositoryInput = {
     branch?: Prisma.StringFieldUpdateOperationsInput | string;
     status?: Prisma.EnumAnalysisStatusFieldUpdateOperationsInput | $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    truncatedByGitHub?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    limitedByDevScope?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    maximumReturnedItems?: Prisma.IntFieldUpdateOperationsInput | number;
     itemsAnalyzed?: Prisma.IntFieldUpdateOperationsInput | number;
     analysisStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     analysisCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -873,7 +957,9 @@ export type RepositorySnapshotUncheckedUpdateWithoutRepositoryInput = {
     branch?: Prisma.StringFieldUpdateOperationsInput | string;
     status?: Prisma.EnumAnalysisStatusFieldUpdateOperationsInput | $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    truncatedByGitHub?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    limitedByDevScope?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    maximumReturnedItems?: Prisma.IntFieldUpdateOperationsInput | number;
     itemsAnalyzed?: Prisma.IntFieldUpdateOperationsInput | number;
     analysisStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     analysisCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -890,7 +976,9 @@ export type RepositorySnapshotUncheckedUpdateManyWithoutRepositoryInput = {
     branch?: Prisma.StringFieldUpdateOperationsInput | string;
     status?: Prisma.EnumAnalysisStatusFieldUpdateOperationsInput | $Enums.AnalysisStatus;
     treeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-    treeTruncated?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    truncatedByGitHub?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    limitedByDevScope?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    maximumReturnedItems?: Prisma.IntFieldUpdateOperationsInput | number;
     itemsAnalyzed?: Prisma.IntFieldUpdateOperationsInput | number;
     analysisStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     analysisCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -927,7 +1015,9 @@ export type RepositorySnapshotSelect<ExtArgs extends runtime.Types.Extensions.In
     branch?: boolean;
     status?: boolean;
     treeData?: boolean;
-    treeTruncated?: boolean;
+    truncatedByGitHub?: boolean;
+    limitedByDevScope?: boolean;
+    maximumReturnedItems?: boolean;
     itemsAnalyzed?: boolean;
     analysisStartedAt?: boolean;
     analysisCompletedAt?: boolean;
@@ -947,7 +1037,9 @@ export type RepositorySnapshotSelectCreateManyAndReturn<ExtArgs extends runtime.
     branch?: boolean;
     status?: boolean;
     treeData?: boolean;
-    treeTruncated?: boolean;
+    truncatedByGitHub?: boolean;
+    limitedByDevScope?: boolean;
+    maximumReturnedItems?: boolean;
     itemsAnalyzed?: boolean;
     analysisStartedAt?: boolean;
     analysisCompletedAt?: boolean;
@@ -963,7 +1055,9 @@ export type RepositorySnapshotSelectUpdateManyAndReturn<ExtArgs extends runtime.
     branch?: boolean;
     status?: boolean;
     treeData?: boolean;
-    treeTruncated?: boolean;
+    truncatedByGitHub?: boolean;
+    limitedByDevScope?: boolean;
+    maximumReturnedItems?: boolean;
     itemsAnalyzed?: boolean;
     analysisStartedAt?: boolean;
     analysisCompletedAt?: boolean;
@@ -979,7 +1073,9 @@ export type RepositorySnapshotSelectScalar = {
     branch?: boolean;
     status?: boolean;
     treeData?: boolean;
-    treeTruncated?: boolean;
+    truncatedByGitHub?: boolean;
+    limitedByDevScope?: boolean;
+    maximumReturnedItems?: boolean;
     itemsAnalyzed?: boolean;
     analysisStartedAt?: boolean;
     analysisCompletedAt?: boolean;
@@ -987,7 +1083,7 @@ export type RepositorySnapshotSelectScalar = {
     createdAt?: boolean;
     updatedAt?: boolean;
 };
-export type RepositorySnapshotOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "repositoryId" | "commitSha" | "branch" | "status" | "treeData" | "treeTruncated" | "itemsAnalyzed" | "analysisStartedAt" | "analysisCompletedAt" | "failureReason" | "createdAt" | "updatedAt", ExtArgs["result"]["repositorySnapshot"]>;
+export type RepositorySnapshotOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "repositoryId" | "commitSha" | "branch" | "status" | "treeData" | "truncatedByGitHub" | "limitedByDevScope" | "maximumReturnedItems" | "itemsAnalyzed" | "analysisStartedAt" | "analysisCompletedAt" | "failureReason" | "createdAt" | "updatedAt", ExtArgs["result"]["repositorySnapshot"]>;
 export type RepositorySnapshotInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
     repository?: boolean | Prisma.RepositoryDefaultArgs<ExtArgs>;
     languages?: boolean | Prisma.RepositorySnapshot$languagesArgs<ExtArgs>;
@@ -1016,7 +1112,9 @@ export type $RepositorySnapshotPayload<ExtArgs extends runtime.Types.Extensions.
         branch: string;
         status: $Enums.AnalysisStatus;
         treeData: runtime.JsonValue | null;
-        treeTruncated: boolean;
+        truncatedByGitHub: boolean;
+        limitedByDevScope: boolean;
+        maximumReturnedItems: number;
         itemsAnalyzed: number;
         analysisStartedAt: Date | null;
         analysisCompletedAt: Date | null;
@@ -1090,7 +1188,9 @@ export interface RepositorySnapshotFieldRefs {
     readonly branch: Prisma.FieldRef<"RepositorySnapshot", 'String'>;
     readonly status: Prisma.FieldRef<"RepositorySnapshot", 'AnalysisStatus'>;
     readonly treeData: Prisma.FieldRef<"RepositorySnapshot", 'Json'>;
-    readonly treeTruncated: Prisma.FieldRef<"RepositorySnapshot", 'Boolean'>;
+    readonly truncatedByGitHub: Prisma.FieldRef<"RepositorySnapshot", 'Boolean'>;
+    readonly limitedByDevScope: Prisma.FieldRef<"RepositorySnapshot", 'Boolean'>;
+    readonly maximumReturnedItems: Prisma.FieldRef<"RepositorySnapshot", 'Int'>;
     readonly itemsAnalyzed: Prisma.FieldRef<"RepositorySnapshot", 'Int'>;
     readonly analysisStartedAt: Prisma.FieldRef<"RepositorySnapshot", 'DateTime'>;
     readonly analysisCompletedAt: Prisma.FieldRef<"RepositorySnapshot", 'DateTime'>;

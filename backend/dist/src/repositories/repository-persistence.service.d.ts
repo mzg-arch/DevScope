@@ -31,10 +31,10 @@ export declare class RepositoryPersistenceService {
     saveRepository(repository: PersistableRepository): Promise<{
         id: string;
         githubId: string;
-        fullName: string;
-        githubUrl: string;
         owner: string;
         name: string;
+        fullName: string;
+        githubUrl: string;
         description: string | null;
         defaultBranch: string;
         visibility: string;
@@ -58,12 +58,14 @@ export declare class RepositoryPersistenceService {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            commitSha: string;
-            status: import("../generated/prisma/enums").AnalysisStatus;
             repositoryId: string;
+            commitSha: string;
             branch: string;
+            status: import("../generated/prisma/enums").AnalysisStatus;
             treeData: import("@prisma/client/runtime/client").JsonValue | null;
-            treeTruncated: boolean;
+            truncatedByGitHub: boolean;
+            limitedByDevScope: boolean;
+            maximumReturnedItems: number;
             itemsAnalyzed: number;
             analysisStartedAt: Date | null;
             analysisCompletedAt: Date | null;
@@ -72,10 +74,10 @@ export declare class RepositoryPersistenceService {
     } & {
         id: string;
         githubId: string;
-        fullName: string;
-        githubUrl: string;
         owner: string;
         name: string;
+        fullName: string;
+        githubUrl: string;
         description: string | null;
         defaultBranch: string;
         visibility: string;
@@ -101,10 +103,10 @@ export declare class RepositoryPersistenceService {
     } & {
         id: string;
         githubId: string;
-        fullName: string;
-        githubUrl: string;
         owner: string;
         name: string;
+        fullName: string;
+        githubUrl: string;
         description: string | null;
         defaultBranch: string;
         visibility: string;

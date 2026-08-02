@@ -1,10 +1,10 @@
 generator client {
-  provider            = "prisma-client"
-  output              = "../src/generated/prisma"
-  runtime             = "nodejs"
-  moduleFormat        = "cjs"
+  provider               = "prisma-client"
+  output                 = "../src/generated/prisma"
+  runtime                = "nodejs"
+  moduleFormat           = "cjs"
   generatedFileExtension = "ts"
-  importFileExtension = ""
+  importFileExtension    = ""
 }
 
 datasource db {
@@ -51,18 +51,20 @@ model Repository {
 }
 
 model RepositorySnapshot {
-  id                  String         @id @default(cuid())
-  repositoryId        String
-  repository          Repository     @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
-  commitSha           String
-  branch              String
-  status              AnalysisStatus @default(PENDING)
-  treeData            Json?
-  treeTruncated       Boolean        @default(false)
-  itemsAnalyzed       Int            @default(0)
-  analysisStartedAt   DateTime?
-  analysisCompletedAt DateTime?
-  failureReason       String?        @db.Text
+  id                   String         @id @default(cuid())
+  repositoryId         String
+  repository           Repository     @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  commitSha            String
+  branch               String
+  status               AnalysisStatus @default(PENDING)
+  treeData             Json?
+  truncatedByGitHub    Boolean        @default(false)
+  limitedByDevScope    Boolean        @default(false)
+  maximumReturnedItems Int            @default(20000)
+  itemsAnalyzed        Int            @default(0)
+  analysisStartedAt    DateTime?
+  analysisCompletedAt  DateTime?
+  failureReason        String?        @db.Text
 
   languages    LanguageStatistic[]
   technologies TechnologyDetection[]
