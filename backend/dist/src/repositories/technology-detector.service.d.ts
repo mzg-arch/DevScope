@@ -1,8 +1,9 @@
+import { RepositoryPersistenceService } from "./repository-persistence.service";
 import { RepositoriesService } from "./repositories.service";
-type Confidence = "high" | "medium";
 export declare class TechnologyDetectorService {
     private readonly repositoriesService;
-    constructor(repositoriesService: RepositoriesService);
+    private readonly repositoryPersistenceService;
+    constructor(repositoriesService: RepositoriesService, repositoryPersistenceService: RepositoryPersistenceService);
     detectTechnologies(repositoryUrl: string): Promise<{
         repository: {
             name: string;
@@ -16,15 +17,15 @@ export declare class TechnologyDetectorService {
             detectedTechnologies: number;
         };
         languages: {
-            percentage: number;
             name: string;
             files: number;
             extensions: string[];
+            percentage: number;
         }[];
         technologies: {
             name: string;
             category: string;
-            confidence: Confidence;
+            confidence: string;
             evidence: string[];
         }[];
         limits: {
@@ -32,6 +33,9 @@ export declare class TechnologyDetectorService {
             limitedByDevScope: boolean;
             maximumReturnedItems: number;
         };
+        cache: {
+            hit: boolean;
+            commitSha: string;
+        };
     }>;
 }
-export {};

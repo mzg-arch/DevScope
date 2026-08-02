@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TechnologyDetectorService = void 0;
 const common_1 = require("@nestjs/common");
+const repository_persistence_service_1 = require("./repository-persistence.service");
 const repositories_service_1 = require("./repositories.service");
 const languageRules = [
     { name: "TypeScript", extensions: ["ts", "tsx"] },
@@ -192,11 +193,51 @@ const technologyRules = [
 ];
 let TechnologyDetectorService = class TechnologyDetectorService {
     repositoriesService;
-    constructor(repositoriesService) {
+    repositoryPersistenceService;
+    constructor(repositoriesService, repositoryPersistenceService) {
         this.repositoriesService = repositoriesService;
+        this.repositoryPersistenceService = repositoryPersistenceService;
     }
     async detectTechnologies(repositoryUrl) {
-        const tree = await this.repositoriesService.getRepositoryTree(repositoryUrl);
+        const version = await this.repositoriesService.getRepositoryVersion(repositoryUrl);
+        const cachedSnapshot = await this.repositoryPersistenceService.findCompletedSnapshot(version.repository.fullName, version.commitSha);
+        if (cachedSnapshot) {
+            return {
+                repository: {
+                    name: cachedSnapshot.repository.name,
+                    fullName: cachedSnapshot.repository.fullName,
+                    branch: cachedSnapshot.branch,
+                    githubUrl: cachedSnapshot.repository.githubUrl,
+                },
+                summary: {
+                    analyzedItems: cachedSnapshot.itemsAnalyzed,
+                    detectedLanguages: cachedSnapshot.languages.length,
+                    detectedTechnologies: cachedSnapshot.technologies.length,
+                },
+                languages: cachedSnapshot.languages.map((language) => ({
+                    name: language.name,
+                    files: language.fileCount,
+                    extensions: language.extensions,
+                    percentage: language.percentage,
+                })),
+                technologies: cachedSnapshot.technologies.map((technology) => ({
+                    name: technology.name,
+                    category: technology.category,
+                    confidence: technology.confidence,
+                    evidence: technology.evidence,
+                })),
+                limits: {
+                    truncatedByGitHub: cachedSnapshot.truncatedByGitHub,
+                    limitedByDevScope: cachedSnapshot.limitedByDevScope,
+                    maximumReturnedItems: cachedSnapshot.maximumReturnedItems,
+                },
+                cache: {
+                    hit: true,
+                    commitSha: cachedSnapshot.commitSha,
+                },
+            };
+        }
+        const tree = await this.repositoriesService.getRepositoryTree(repositoryUrl, version);
         const extensionCounts = tree.items.reduce((counts, item) => {
             if (item.type !== "file" || !item.extension) {
                 return counts;
@@ -220,7 +261,9 @@ let TechnologyDetectorService = class TechnologyDetectorService {
         const languages = detectedLanguages.map((language) => ({
             ...language,
             percentage: totalLanguageFiles > 0
-                ? Math.round((language.files / totalLanguageFiles) * 1000) / 10
+                ? Math.round((language.files /
+                    totalLanguageFiles) *
+                    1000) / 10
                 : 0,
         }));
         const paths = tree.items.map((item) => ({
@@ -248,6 +291,15 @@ let TechnologyDetectorService = class TechnologyDetectorService {
             }
             return first.name.localeCompare(second.name);
         });
+        await this.repositoryPersistenceService.saveCompletedSnapshot({
+            repositoryFullName: tree.repository.fullName,
+            commitSha: tree.commitSha,
+            branch: tree.repository.branch,
+            treeItems: tree.items,
+            limits: tree.limits,
+            languages,
+            technologies,
+        });
         return {
             repository: tree.repository,
             summary: {
@@ -258,12 +310,17 @@ let TechnologyDetectorService = class TechnologyDetectorService {
             languages,
             technologies,
             limits: tree.limits,
+            cache: {
+                hit: false,
+                commitSha: tree.commitSha,
+            },
         };
     }
 };
 exports.TechnologyDetectorService = TechnologyDetectorService;
 exports.TechnologyDetectorService = TechnologyDetectorService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [repositories_service_1.RepositoriesService])
+    __metadata("design:paramtypes", [repositories_service_1.RepositoriesService,
+        repository_persistence_service_1.RepositoryPersistenceService])
 ], TechnologyDetectorService);
 //# sourceMappingURL=technology-detector.service.js.map

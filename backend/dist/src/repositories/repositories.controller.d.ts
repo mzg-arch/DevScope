@@ -52,21 +52,25 @@ export declare class RepositoriesController {
             detectedTechnologies: number;
         };
         languages: {
-            percentage: number;
             name: string;
             files: number;
             extensions: string[];
+            percentage: number;
         }[];
         technologies: {
             name: string;
             category: string;
-            confidence: "high" | "medium";
+            confidence: string;
             evidence: string[];
         }[];
         limits: {
             truncatedByGitHub: boolean;
             limitedByDevScope: boolean;
             maximumReturnedItems: number;
+        };
+        cache: {
+            hit: boolean;
+            commitSha: string;
         };
     }>;
     explainRepository(dto: InspectRepositoryDto): Promise<{

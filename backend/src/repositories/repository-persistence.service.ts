@@ -1,39 +1,51 @@
 import { Injectable } from "@nestjs/common";
 
+import type { Prisma } from "../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
+import type { InspectedRepository } from "./repositories.service";
 
-type PersistableRepository = {
-  id: number;
+type SnapshotTreeItem = {
+  path: string;
   name: string;
-  fullName: string;
-  description: string | null;
-  githubUrl: string;
-  defaultBranch: string;
-  visibility: string;
-  archived: boolean;
-  language: string | null;
-  topics: string[];
-  stars: number;
-  forks: number;
-  openIssues: number;
-  license: {
-    name: string;
-    identifier: string;
-  } | null;
-  owner: {
-    username: string;
-    avatarUrl: string;
-    githubUrl: string;
+  type: string;
+  sha: string;
+  size: number | null;
+  extension: string | null;
+};
+
+type SnapshotLanguage = {
+  name: string;
+  files: number;
+  percentage: number;
+  extensions: string[];
+};
+
+type SnapshotTechnology = {
+  name: string;
+  category: string;
+  confidence: string;
+  evidence: string[];
+};
+
+type SaveSnapshotInput = {
+  repositoryFullName: string;
+  commitSha: string;
+  branch: string;
+  treeItems: SnapshotTreeItem[];
+  limits: {
+    truncatedByGitHub: boolean;
+    limitedByDevScope: boolean;
+    maximumReturnedItems: number;
   };
-  updatedAt: string;
-  pushedAt: string;
+  languages: SnapshotLanguage[];
+  technologies: SnapshotTechnology[];
 };
 
 @Injectable()
 export class RepositoryPersistenceService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async saveRepository(repository: PersistableRepository) {
+  async saveRepository(repository: InspectedRepository) {
     const repositoryData = {
       githubId: String(repository.id),
       owner: repository.owner.username,
@@ -71,6 +83,149 @@ export class RepositoryPersistenceService {
     });
   }
 
+  async findCompletedSnapshot(
+    repositoryFullName: string,
+    commitSha: string,
+  ) {
+    return this.prisma.repositorySnapshot.findFirst({
+      where: {
+        commitSha,
+        status: "COMPLETED",
+        repository: {
+          is: {
+            fullName: repositoryFullName,
+          },
+        },
+      },
+      include: {
+        repository: true,
+        languages: {
+          orderBy: {
+            fileCount: "desc",
+          },
+        },
+        technologies: {
+          orderBy: [
+            {
+              category: "asc",
+            },
+            {
+              name: "asc",
+            },
+          ],
+        },
+      },
+    });
+  }
+
+  async saveCompletedSnapshot(input: SaveSnapshotInput) {
+    const repository =
+      await this.prisma.repository.findUnique({
+        where: {
+          fullName: input.repositoryFullName,
+        },
+      });
+
+    if (!repository) {
+      throw new Error(
+        `Repository ${input.repositoryFullName} was not saved before its snapshot.`,
+      );
+    }
+
+    const now = new Date();
+
+    return this.prisma.$transaction(async (transaction) => {
+      const snapshot =
+        await transaction.repositorySnapshot.upsert({
+          where: {
+            repositoryId_commitSha: {
+              repositoryId: repository.id,
+              commitSha: input.commitSha,
+            },
+          },
+          create: {
+            repositoryId: repository.id,
+            commitSha: input.commitSha,
+            branch: input.branch,
+            status: "COMPLETED",
+            treeData:
+              input.treeItems as Prisma.InputJsonValue,
+            truncatedByGitHub:
+              input.limits.truncatedByGitHub,
+            limitedByDevScope:
+              input.limits.limitedByDevScope,
+            maximumReturnedItems:
+              input.limits.maximumReturnedItems,
+            itemsAnalyzed: input.treeItems.length,
+            analysisStartedAt: now,
+            analysisCompletedAt: now,
+          },
+          update: {
+            branch: input.branch,
+            status: "COMPLETED",
+            treeData:
+              input.treeItems as Prisma.InputJsonValue,
+            truncatedByGitHub:
+              input.limits.truncatedByGitHub,
+            limitedByDevScope:
+              input.limits.limitedByDevScope,
+            maximumReturnedItems:
+              input.limits.maximumReturnedItems,
+            itemsAnalyzed: input.treeItems.length,
+            analysisStartedAt: now,
+            analysisCompletedAt: now,
+            failureReason: null,
+          },
+        });
+
+      await transaction.languageStatistic.deleteMany({
+        where: {
+          snapshotId: snapshot.id,
+        },
+      });
+
+      await transaction.technologyDetection.deleteMany({
+        where: {
+          snapshotId: snapshot.id,
+        },
+      });
+
+      if (input.languages.length > 0) {
+        await transaction.languageStatistic.createMany({
+          data: input.languages.map((language) => ({
+            snapshotId: snapshot.id,
+            name: language.name,
+            fileCount: language.files,
+            percentage: language.percentage,
+            extensions: language.extensions,
+          })),
+        });
+      }
+
+      if (input.technologies.length > 0) {
+        await transaction.technologyDetection.createMany({
+          data: input.technologies.map((technology) => ({
+            snapshotId: snapshot.id,
+            name: technology.name,
+            category: technology.category,
+            confidence: technology.confidence,
+            evidence: technology.evidence,
+          })),
+        });
+      }
+
+      return transaction.repositorySnapshot.findUniqueOrThrow({
+        where: {
+          id: snapshot.id,
+        },
+        include: {
+          languages: true,
+          technologies: true,
+        },
+      });
+    });
+  }
+
   async findRepositoryByFullName(fullName: string) {
     return this.prisma.repository.findUnique({
       where: {
@@ -102,7 +257,9 @@ export class RepositoryPersistenceService {
     });
   }
 
-  private toOptionalDate(value: string | null | undefined) {
+  private toOptionalDate(
+    value: string | null | undefined,
+  ) {
     if (!value) {
       return null;
     }

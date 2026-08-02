@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-
+import { RepositoryPersistenceService } from "./repository-persistence.service";
 import { RepositoriesService } from "./repositories.service";
 
 type Confidence = "high" | "medium";
@@ -195,25 +195,85 @@ const technologyRules: TechnologyRule[] = [
 export class TechnologyDetectorService {
   constructor(
     private readonly repositoriesService: RepositoriesService,
+    private readonly repositoryPersistenceService: RepositoryPersistenceService,
   ) {}
 
   async detectTechnologies(repositoryUrl: string) {
+    const version =
+      await this.repositoriesService.getRepositoryVersion(
+        repositoryUrl,
+      );
+
+    const cachedSnapshot =
+      await this.repositoryPersistenceService.findCompletedSnapshot(
+        version.repository.fullName,
+        version.commitSha,
+      );
+
+    if (cachedSnapshot) {
+      return {
+        repository: {
+          name: cachedSnapshot.repository.name,
+          fullName: cachedSnapshot.repository.fullName,
+          branch: cachedSnapshot.branch,
+          githubUrl: cachedSnapshot.repository.githubUrl,
+        },
+        summary: {
+          analyzedItems: cachedSnapshot.itemsAnalyzed,
+          detectedLanguages:
+            cachedSnapshot.languages.length,
+          detectedTechnologies:
+            cachedSnapshot.technologies.length,
+        },
+        languages: cachedSnapshot.languages.map(
+          (language) => ({
+            name: language.name,
+            files: language.fileCount,
+            extensions: language.extensions,
+            percentage: language.percentage,
+          }),
+        ),
+        technologies: cachedSnapshot.technologies.map(
+          (technology) => ({
+            name: technology.name,
+            category: technology.category,
+            confidence: technology.confidence,
+            evidence: technology.evidence,
+          }),
+        ),
+        limits: {
+          truncatedByGitHub:
+            cachedSnapshot.truncatedByGitHub,
+          limitedByDevScope:
+            cachedSnapshot.limitedByDevScope,
+          maximumReturnedItems:
+            cachedSnapshot.maximumReturnedItems,
+        },
+        cache: {
+          hit: true,
+          commitSha: cachedSnapshot.commitSha,
+        },
+      };
+    }
+
     const tree =
-      await this.repositoriesService.getRepositoryTree(repositoryUrl);
+      await this.repositoriesService.getRepositoryTree(
+        repositoryUrl,
+        version,
+      );
 
-    const extensionCounts = tree.items.reduce<Record<string, number>>(
-      (counts, item) => {
-        if (item.type !== "file" || !item.extension) {
-          return counts;
-        }
-
-        counts[item.extension] =
-          (counts[item.extension] ?? 0) + 1;
-
+    const extensionCounts = tree.items.reduce<
+      Record<string, number>
+    >((counts, item) => {
+      if (item.type !== "file" || !item.extension) {
         return counts;
-      },
-      {},
-    );
+      }
+
+      counts[item.extension] =
+        (counts[item.extension] ?? 0) + 1;
+
+      return counts;
+    }, {});
 
     const detectedLanguages = languageRules
       .map((language) => {
@@ -232,22 +292,31 @@ export class TechnologyDetectorService {
         };
       })
       .filter((language) => language.files > 0)
-      .sort((first, second) => second.files - first.files);
+      .sort(
+        (first, second) =>
+          second.files - first.files,
+      );
 
-    const totalLanguageFiles = detectedLanguages.reduce(
-      (total, language) => total + language.files,
-      0,
+    const totalLanguageFiles =
+      detectedLanguages.reduce(
+        (total, language) =>
+          total + language.files,
+        0,
+      );
+
+    const languages = detectedLanguages.map(
+      (language) => ({
+        ...language,
+        percentage:
+          totalLanguageFiles > 0
+            ? Math.round(
+                (language.files /
+                  totalLanguageFiles) *
+                  1000,
+              ) / 10
+            : 0,
+      }),
     );
-
-    const languages = detectedLanguages.map((language) => ({
-      ...language,
-      percentage:
-        totalLanguageFiles > 0
-          ? Math.round(
-              (language.files / totalLanguageFiles) * 1000,
-            ) / 10
-          : 0,
-    }));
 
     const paths = tree.items.map((item) => ({
       original: item.path,
@@ -272,11 +341,15 @@ export class TechnologyDetectorService {
           evidence,
         };
       })
-      .filter((technology) => technology.evidence.length > 0)
+      .filter(
+        (technology) =>
+          technology.evidence.length > 0,
+      )
       .sort((first, second) => {
-        const categoryComparison = first.category.localeCompare(
-          second.category,
-        );
+        const categoryComparison =
+          first.category.localeCompare(
+            second.category,
+          );
 
         if (categoryComparison !== 0) {
           return categoryComparison;
@@ -285,16 +358,31 @@ export class TechnologyDetectorService {
         return first.name.localeCompare(second.name);
       });
 
+    await this.repositoryPersistenceService.saveCompletedSnapshot({
+      repositoryFullName: tree.repository.fullName,
+      commitSha: tree.commitSha,
+      branch: tree.repository.branch,
+      treeItems: tree.items,
+      limits: tree.limits,
+      languages,
+      technologies,
+    });
+
     return {
       repository: tree.repository,
       summary: {
         analyzedItems: tree.items.length,
         detectedLanguages: languages.length,
-        detectedTechnologies: technologies.length,
+        detectedTechnologies:
+          technologies.length,
       },
       languages,
       technologies,
       limits: tree.limits,
+      cache: {
+        hit: false,
+        commitSha: tree.commitSha,
+      },
     };
   }
 }
